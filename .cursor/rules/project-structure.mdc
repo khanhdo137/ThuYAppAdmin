@@ -1,0 +1,69 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# AdminDashboard Project Structure Guide
+
+## Overview
+This is a React-based admin dashboard for a veterinary clinic management system ("Thú Y Bình Dương"). The application uses Material-UI for the design system and follows a modular architecture.
+
+## Key Entry Points
+- Main application: [src/App.js](mdc:src/App.js) - Contains routing, theme configuration, and overall app structure
+- Root component: [src/index.js](mdc:src/index.js) - React app entry point
+- Layout system: [src/layout/DashboardLayout.js](mdc:src/layout/DashboardLayout.js) - Main admin layout with sidebar navigation
+
+## Directory Structure
+
+### `/src/components/`
+Reusable UI components exported via [src/components/index.js](mdc:src/components/index.js):
+- **ActionButton.js** - Standardized action buttons with icons
+- **ContentCard.js** - Card containers for content sections  
+- **DataTable.js** - Consistent data tables with built-in actions
+- **PageTemplate.js** - Standard page container with responsive layout
+- **SearchFilterBar.js** - Search and filtering component
+- **PrivateRoute.js** - Route protection component
+
+### `/src/pages/`
+Page components following the `/admin/*` route structure:
+- **DashboardPage.js** - Main dashboard overview
+- **AppointmentsPage.js** - Appointment management (Lịch khám)
+- **CustomersPage.js** - Customer management (Khách hàng)
+- **DoctorsPage.js** - Doctor management (Bác sĩ)
+- **PetsPage.js** - Pet records (Thú cưng)
+- **ServicesPage.js** - Service management (Dịch vụ)
+- **NewsPage.js** - News/articles (Tin tức)
+- **UsersPage.js** - User account management (Tài khoản)
+- **LoginPage.js** - Authentication
+- **Logout.js** - Logout handler
+
+### `/src/layout/`
+Layout components:
+- **DashboardLayout.js** - Main admin layout with sidebar, header, user menu
+
+### `/src/theme/`
+Theme configuration:
+- **AppTheme.js** - Material-UI theme customization
+
+### `/src/services/`
+API and service layer (currently empty - services should be added here)
+
+### `/src/utils/`
+Utility functions and helpers
+
+## Routing Structure
+- `/` → Redirects to `/login`
+- `/login` → Public login page
+- `/admin/*` → Protected admin routes using DashboardLayout
+- `/logout` → Logout handler
+- Legacy routes automatically redirect to new `/admin/*` structure
+
+## Component Usage Guide
+Detailed component usage patterns are documented in [src/components/USAGE_GUIDE.md](mdc:src/components/USAGE_GUIDE.md)
+
+## Dependencies
+Key dependencies from [package.json](mdc:package.json):
+- **React 19.1.0** with React Router Dom 7.6.2
+- **Material-UI 7.1.2** with icons and date pickers
+- **Axios 1.10.0** for API calls
+- **JWT-decode 4.0.0** for authentication

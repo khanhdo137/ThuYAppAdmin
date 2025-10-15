@@ -1,0 +1,110 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# Component Development Patterns
+
+## Component Architecture
+This project follows a standardized component architecture with reusable UI components that ensure consistency across the admin dashboard.
+
+## Import Strategy
+Always import components from the centralized index file:
+```jsx
+import { PageTemplate, DataTable, ActionButton, ContentCard } from '../components';
+```
+
+## Component Categories
+
+### 1. Layout Components
+- **PageTemplate** - [src/components/PageTemplate.js](mdc:src/components/PageTemplate.js): Standard page container
+- **DashboardLayout** - [src/layout/DashboardLayout.js](mdc:src/layout/DashboardLayout.js): Main admin layout
+
+### 2. Data Components  
+- **DataTable** - [src/components/DataTable.js](mdc:src/components/DataTable.js): Standardized tables with actions
+- **SearchFilterBar** - [src/components/SearchFilterBar.js](mdc:src/components/SearchFilterBar.js): Search and filtering
+
+### 3. UI Components
+- **ActionButton** - [src/components/ActionButton.js](mdc:src/components/ActionButton.js): Consistent action buttons
+- **ContentCard** - [src/components/ContentCard.js](mdc:src/components/ContentCard.js): Card containers
+
+### 4. Route Components
+- **PrivateRoute** - [src/components/PrivateRoute.js](mdc:src/components/PrivateRoute.js): Authentication protection
+
+## Standard Page Structure
+Every admin page should follow this pattern:
+
+```jsx
+import React, { useState } from 'react';
+import { PageTemplate, SearchFilterBar, ActionButton, DataTable, ContentCard } from '../components';
+
+const ExamplePage = () => {
+  return (
+    <PageTemplate>
+      <SearchFilterBar
+        searchValue={searchTerm}
+        onSearchChange={(e) => setSearchTerm(e.target.value)}
+        filters={filters}
+        variant="paper"
+      >
+        <ActionButton onClick={handleAdd} icon={<Add />}>
+          Thêm Mới
+        </ActionButton>
+      </SearchFilterBar>
+
+      <ContentCard title="Title" subtitle="Description">
+        <DataTable
+          columns={columns}
+          data={data}
+          onEdit={handleEdit}
+          onDelete={handleDelete}
+        />
+      </ContentCard>
+    </PageTemplate>
+  );
+};
+```
+
+## Component Props Conventions
+
+### PageTemplate Props
+- `maxWidth`: "xs" | "sm" | "md" | "lg" | "xl" (default: "xl")
+- `spacing`: number (default: 3)
+
+### DataTable Props
+- `columns`: Array of column objects with field, label, align, render
+- `data`: Array of data objects
+- `onView`, `onEdit`, `onDelete`: Action handlers (optional)
+- `showActions`: boolean to show/hide action column
+
+### ActionButton Props  
+- `icon`: Material-UI icon component
+- `variant`: "contained" | "outlined" | "text"
+- `position`: "left" | "center" | "right"
+
+### SearchFilterBar Props
+- `searchValue`, `onSearchChange`: Search state
+- `filters`: Array of filter objects
+- `variant`: "standard" | "paper"
+
+## Material-UI Theme
+Theme configuration is in [src/App.js](mdc:src/App.js) with:
+- Primary color: #1976d2 (blue)
+- Secondary color: #9c27b0 (purple)  
+- Custom button styles (textTransform: 'none')
+- Consistent border radius: 8px
+
+## Vietnamese Language Support
+All user-facing text should be in Vietnamese following the existing patterns:
+- "Thêm Mới" (Add New)
+- "Chỉnh sửa" (Edit)
+- "Xóa" (Delete)
+- "Tìm kiếm" (Search)
+
+## Responsive Design
+All components are mobile-responsive using Material-UI breakpoints:
+- xs: 0px+
+- sm: 600px+
+- md: 900px+
+- lg: 1200px+
+- xl: 1536px+

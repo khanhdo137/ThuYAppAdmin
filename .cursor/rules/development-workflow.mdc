@@ -1,0 +1,143 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# Development Workflow & Best Practices
+
+## Project Setup
+This is a React application created with Create React App using [package.json](mdc:package.json).
+
+## Development Commands
+```bash
+npm start    # Start development server (port 3000)
+npm run build   # Create production build
+npm test     # Run tests
+npm run eject   # Eject from CRA (not recommended)
+```
+
+## Code Organization Principles
+
+### File Naming Conventions
+- **Components**: PascalCase (`PageTemplate.js`, `DashboardLayout.js`)
+- **Pages**: PascalCase with "Page" suffix (`CustomersPage.js`)
+- **Utilities**: camelCase (`utils/`)
+- **Services**: camelCase (`services/`)
+
+### Import Order
+Follow this import order for consistency:
+```jsx
+// 1. React and React-related libraries
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
+
+// 2. Third-party libraries
+import { Box, Button, Typography } from '@mui/material';
+import { Add, Edit, Delete } from '@mui/icons-material';
+
+// 3. Internal components (use centralized imports)
+import { PageTemplate, DataTable, ActionButton } from '../components';
+
+// 4. Services and utilities
+import { apiService } from '../services/apiService';
+import { formatDate } from '../utils/helpers';
+```
+
+## State Management
+Currently using React's built-in state management:
+- `useState` for component state
+- `localStorage` for authentication state
+- Consider adding Context API or external state management if complexity grows
+
+## API Integration
+API services should be added to [src/services/](mdc:src/services) directory:
+```jsx
+// Example: src/services/apiService.js
+import axios from 'axios';
+
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8080/api';
+
+export const apiService = {
+  customers: {
+    getAll: () => axios.get(`${API_BASE_URL}/customers`),
+    getById: (id) => axios.get(`${API_BASE_URL}/customers/${id}`),
+    create: (data) => axios.post(`${API_BASE_URL}/customers`, data),
+    update: (id, data) => axios.put(`${API_BASE_URL}/customers/${id}`, data),
+    delete: (id) => axios.delete(`${API_BASE_URL}/customers/${id}`)
+  }
+};
+```
+
+## Error Handling
+Implement consistent error handling patterns:
+```jsx
+const [loading, setLoading] = useState(false);
+const [error, setError] = useState(null);
+
+const fetchData = async () => {
+  try {
+    setLoading(true);
+    setError(null);
+    const response = await apiService.customers.getAll();
+    setData(response.data);
+  } catch (err) {
+    setError('Không thể tải dữ liệu. Vui lòng thử lại.');
+    console.error('API Error:', err);
+  } finally {
+    setLoading(false);
+  }
+};
+```
+
+## Component Development Guidelines
+
+### Creating New Components
+1. Create component file in appropriate directory
+2. Follow existing patterns from [src/components/USAGE_GUIDE.md](mdc:src/components/USAGE_GUIDE.md)
+3. Add to [src/components/index.js](mdc:src/components/index.js) if reusable
+4. Include PropTypes or TypeScript types (if added later)
+
+### Creating New Pages
+1. Create page in [src/pages/](mdc:src/pages)
+2. Use PageTemplate wrapper
+3. Follow standard structure with SearchFilterBar, ContentCard, DataTable
+4. Add route to [src/App.js](mdc:src/App.js)
+5. Update navigation menu if needed
+
+## Styling Guidelines
+- Use Material-UI's `sx` prop for component-specific styling
+- Follow the theme defined in [src/App.js](mdc:src/App.js)
+- Maintain consistent spacing using theme spacing units
+- Ensure responsive design across all breakpoints
+
+## Testing Strategy
+- Test files should be co-located with components (`ComponentName.test.js`)
+- Use React Testing Library for component testing
+- Test user interactions and accessibility
+- Mock API calls in tests
+
+## Environment Variables
+Create `.env` file for environment-specific configuration:
+```
+REACT_APP_API_URL=http://localhost:8080/api
+REACT_APP_ENV=development
+```
+
+## Git Workflow
+Based on current git status, follow these practices:
+- Commit atomic changes with descriptive messages
+- Use Vietnamese for commit messages if preferred by team
+- Keep feature branches focused on single functionality
+- Ensure all tests pass before committing
+
+## Performance Considerations
+- Use React.memo for components that render frequently
+- Implement pagination for large data sets in DataTable
+- Lazy load pages if bundle size grows large
+- Optimize images in [public/](mdc:public) directory
+
+## Deployment
+- Run `npm run build` to create production build
+- Deploy `build/` directory to web server
+- Configure server to handle client-side routing (SPA)
+- Set appropriate environment variables for production
