@@ -1,4 +1,4 @@
-import { Delete, Edit, Visibility } from '@mui/icons-material';
+import { Delete, Edit, Visibility, FirstPage, LastPage, ChevronLeft, ChevronRight } from '@mui/icons-material';
 import {
     Box,
     IconButton,
@@ -9,7 +9,12 @@ import {
     TableContainer,
     TableHead,
     TableRow,
-    Typography
+    Typography,
+    TablePagination,
+    FormControl,
+    Select,
+    MenuItem,
+    InputLabel
 } from '@mui/material';
 import React from 'react';
 
@@ -21,22 +26,27 @@ const DataTable = ({
   onDelete,
   showActions = true,
   emptyMessage = "Không có dữ liệu",
+  pagination = null,
+  onPageChange = null,
+  onLimitChange = null,
+  loading = false,
   ...props 
 }) => {
   // Only show actions if showActions is true AND at least one action handler is provided
   const shouldShowActions = showActions && (onView || onEdit || onDelete);
 
   return (
-    <TableContainer 
-      component={Paper} 
-      variant="outlined" 
-      sx={{ 
-        borderRadius: 2,
-        border: '1px solid',
-        borderColor: 'divider',
-        ...props.sx
-      }}
-    >
+    <Box>
+      <TableContainer 
+        component={Paper} 
+        variant="outlined" 
+        sx={{ 
+          borderRadius: 2,
+          border: '1px solid',
+          borderColor: 'divider',
+          ...props.sx
+        }}
+      >
       <Table>
         <TableHead>
           <TableRow sx={{ bgcolor: 'grey.50' }}>
@@ -170,7 +180,77 @@ const DataTable = ({
         </TableBody>
       </Table>
     </TableContainer>
-  );
+    
+    {/* Pagination */}
+    {pagination && onPageChange && (
+      <>
+        {console.log('DataTable pagination:', pagination)}
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 2, px: 2 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          <Typography variant="body2" color="text.secondary">
+            Hiển thị {((pagination.page - 1) * pagination.limit) + 1} - {Math.min(pagination.page * pagination.limit, pagination.total)} trong tổng số {pagination.total} mục
+          </Typography>
+        </Box>
+        
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <FormControl size="small" sx={{ minWidth: 80 }}>
+            <Select
+              value={pagination.limit}
+              onChange={(e) => onLimitChange && onLimitChange(e.target.value)}
+              disabled={loading}
+            >
+              <MenuItem value={10}>10</MenuItem>
+              <MenuItem value={15}>15</MenuItem>
+              <MenuItem value={25}>25</MenuItem>
+              <MenuItem value={50}>50</MenuItem>
+            </Select>
+          </FormControl>
+          
+          <Typography variant="body2" sx={{ mx: 1 }}>
+            / trang
+          </Typography>
+          
+          <IconButton 
+            onClick={() => onPageChange(1)} 
+            disabled={pagination.page === 1 || loading}
+            size="small"
+          >
+            <FirstPage />
+          </IconButton>
+          
+          <IconButton 
+            onClick={() => onPageChange(pagination.page - 1)} 
+            disabled={pagination.page === 1 || loading}
+            size="small"
+          >
+            <ChevronLeft />
+          </IconButton>
+          
+          <Typography variant="body2" sx={{ mx: 1, minWidth: 60, textAlign: 'center' }}>
+            {pagination.page} / {Math.max(pagination.totalPages, 1)}
+          </Typography>
+          
+          <IconButton 
+            onClick={() => onPageChange(pagination.page + 1)} 
+            disabled={pagination.page === pagination.totalPages || loading}
+            size="small"
+          >
+            <ChevronRight />
+          </IconButton>
+          
+          <IconButton 
+            onClick={() => onPageChange(pagination.totalPages)} 
+            disabled={pagination.page === pagination.totalPages || loading}
+            size="small"
+          >
+            <LastPage />
+          </IconButton>
+        </Box>
+      </Box>
+      </>
+    )}
+  </Box>
+);
 };
 
 export default DataTable; 

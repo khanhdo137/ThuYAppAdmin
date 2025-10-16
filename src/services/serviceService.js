@@ -1,31 +1,59 @@
 import apiService from './apiService';
 
 class ServiceService {
-  // Get all services (for admin)
-  async getAllServices() {
+  // Get all services (for admin) with pagination
+  async getAllServices(page = 1, limit = 15) {
     try {
+      console.log(`Fetching services: page=${page}, limit=${limit}`);
+      
       // Try admin endpoint first
-      let response = await apiService.getWithParams('Service/admin', { limit: 100 });
+      let response = await apiService.getWithParams('Service/admin', { page, limit });
+      
+      console.log('Services response:', response);
       
       // Backend trả về { services: [...], pagination: {...} }
-      if (response && response.services) {
-        return response.services;
+      if (response && response.services && response.pagination) {
+        return response;
       }
       
-      // Fallback: nếu admin endpoint không có data, thử endpoint thường
-      response = await apiService.getWithParams('Service', { limit: 100 });
+      // Fallback: nếu admin endpoint không có pagination, thử endpoint thường
+      response = await apiService.getWithParams('Service', { page, limit });
       
       // Endpoint thường có thể trả về { data: [...] } hoặc trực tiếp array
       if (response && response.data) {
-        return response.data;
+        return {
+          services: response.data,
+          pagination: {
+            page: 1,
+            limit: response.data.length,
+            total: response.data.length,
+            totalPages: 1
+          }
+        };
       }
       
       // Fallback: nếu response trực tiếp là array
       if (Array.isArray(response)) {
-        return response;
+        return {
+          services: response,
+          pagination: {
+            page: 1,
+            limit: response.length,
+            total: response.length,
+            totalPages: 1
+          }
+        };
       }
       
-      return [];
+      return {
+        services: [],
+        pagination: {
+          page: 1,
+          limit: 15,
+          total: 0,
+          totalPages: 0
+        }
+      };
     } catch (error) {
       console.error('Error fetching services:', error);
       
@@ -34,13 +62,37 @@ class ServiceService {
         const basicResponse = await apiService.get('Service');
         
         if (Array.isArray(basicResponse)) {
-          return basicResponse;
+          return {
+            services: basicResponse,
+            pagination: {
+              page: 1,
+              limit: basicResponse.length,
+              total: basicResponse.length,
+              totalPages: 1
+            }
+          };
         }
         if (basicResponse && basicResponse.data && Array.isArray(basicResponse.data)) {
-          return basicResponse.data;
+          return {
+            services: basicResponse.data,
+            pagination: {
+              page: 1,
+              limit: basicResponse.data.length,
+              total: basicResponse.data.length,
+              totalPages: 1
+            }
+          };
         }
         if (basicResponse && basicResponse.services && Array.isArray(basicResponse.services)) {
-          return basicResponse.services;
+          return {
+            services: basicResponse.services,
+            pagination: {
+              page: 1,
+              limit: basicResponse.services.length,
+              total: basicResponse.services.length,
+              totalPages: 1
+            }
+          };
         }
       } catch (basicError) {
         console.error('Basic endpoint also failed:', basicError);
@@ -136,32 +188,49 @@ class ServiceService {
     }
   }
 
-  // Search services (for admin)
-  async searchServices(searchTerm) {
+  // Search services (for admin) with pagination
+  async searchServices(searchTerm, page = 1, limit = 15) {
     try {
-      console.log(`Searching services with term: "${searchTerm}"`);
+      console.log(`Searching services with term: "${searchTerm}", page=${page}, limit=${limit}`);
       
       const response = await apiService.getWithParams('Service/admin/search', { 
         query: searchTerm,
-        limit: 100 
+        page,
+        limit
       });
       
       console.log('Search response:', response);
       
       // Backend trả về { services: [...], pagination: {...} }
-      if (response && response.services) {
-        console.log(`Found ${response.services.length} services`);
-        return response.services;
+      if (response && response.services && response.pagination) {
+        console.log(`Found ${response.services.length} services with pagination`);
+        return response;
       }
       
       // Fallback: nếu response trực tiếp là array
       if (Array.isArray(response)) {
         console.log(`Found ${response.length} services (direct array)`);
-        return response;
+        return {
+          services: response,
+          pagination: {
+            page: 1,
+            limit: response.length,
+            total: response.length,
+            totalPages: 1
+          }
+        };
       }
       
       console.log('No services found in response');
-      return [];
+      return {
+        services: [],
+        pagination: {
+          page: 1,
+          limit: 15,
+          total: 0,
+          totalPages: 0
+        }
+      };
     } catch (error) {
       console.error('Error searching services:', error);
       console.error('Error details:', {

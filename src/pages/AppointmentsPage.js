@@ -29,8 +29,8 @@ const AppointmentsPage = () => {
   // Use custom hooks for state management
   const {
     appointments, pets, services, customers, doctors,
-    loading, error, searchTerm, statusFilter,
-    handleSearch: performSearch, handleStatusFilter,
+    loading, error, searchTerm, statusFilter, pagination,
+    handleSearch: performSearch, handleStatusFilter, handlePageChange, handleLimitChange,
     createAppointment, updateAppointment, updateAppointmentStatus, deleteAppointment,
     setError
   } = useAppointments();
@@ -169,6 +169,9 @@ const AppointmentsPage = () => {
           onView={(row) => openDialog(APPOINTMENT_DIALOG_MODES.VIEW, row)}
           onEdit={(row) => openDialog(APPOINTMENT_DIALOG_MODES.EDIT, row)}
           onDelete={handleDeleteClick}
+          pagination={pagination}
+          onPageChange={handlePageChange}
+          onLimitChange={handleLimitChange}
         />
       </Paper>
 

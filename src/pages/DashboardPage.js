@@ -18,9 +18,7 @@ import {
 } from 'chart.js';
 import React, { useEffect, useMemo, useState } from 'react';
 import { Doughnut } from 'react-chartjs-2';
-import ContentCard from '../components/ContentCard';
-import DataTable from '../components/DataTable';
-import PageTemplate from '../components/PageTemplate';
+import { ContentCard, DataTable, DashboardFilter, PageTemplate } from '../components';
 import { useToast } from '../components/ToastProvider';
 import {
   authService,
@@ -39,6 +37,14 @@ ChartJS.register(
 const DashboardPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [period, setPeriod] = useState('Hôm nay');
+  
+  // Filter states
+  const [filterType, setFilterType] = useState('today');
+  const [specificDate, setSpecificDate] = useState(new Date().toISOString().split('T')[0]);
+  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  
   const [dashboardData, setDashboardData] = useState({
     todayStats: {
       totalAppointments: 0,
@@ -92,17 +98,43 @@ const DashboardPage = () => {
     };
   }, [dashboardData.completionStats]);
 
+  // Fetch data when filter changes
   useEffect(() => {
     fetchDashboardData();
-  }, []);
+  }, [filterType, specificDate, selectedMonth, selectedYear]);
 
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
       setError(null);
 
-      const response = await dashboardService.getSimpleDashboard();
-      const data = response?.data || response;
+      let response;
+      switch(filterType) {
+        case 'specific-date':
+          response = await dashboardService.getSpecificDateData(specificDate);
+          break;
+        case 'last-7-days':
+          response = await dashboardService.getLast7DaysData();
+          break;
+        case 'this-week':
+          response = await dashboardService.getThisWeekData();
+          break;
+        case 'last-week':
+          response = await dashboardService.getLastWeekData();
+          break;
+        case 'specific-month':
+          response = await dashboardService.getSpecificMonthData(selectedMonth, selectedYear);
+          break;
+        case 'today':
+        default:
+          response = await dashboardService.getTodayData();
+          break;
+      }
+
+      const apiData = response?.data || response;
+      setPeriod(apiData.period || 'Hôm nay');
+      
+      const data = apiData.data || apiData;
       
       setDashboardData({
         todayStats: data.todayStats || {
@@ -125,33 +157,11 @@ const DashboardPage = () => {
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
       
-      // Handle different types of errors
       if (error.message?.includes('401') || error.message?.includes('Unauthorized')) {
         setError('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');
         toast.showError('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');
         authService.clearAuthData();
         window.location.href = '/login';
-      } else if (error.message?.includes('404') || error.message?.includes('Not Found')) {
-        // API not implemented yet - use fallback data
-        console.warn('Dashboard API not implemented yet, using fallback data');
-        setDashboardData({
-          todayStats: {
-            totalAppointments: 0,
-            pendingAppointments: 0,
-            confirmedAppointments: 0,
-            completedAppointments: 0,
-            cancelledAppointments: 0
-          },
-          todayAppointments: [],
-          completionStats: {
-            totalAppointments: 100,
-            completedAppointments: 75,
-            cancelledAppointments: 15,
-            completionRate: 75.0,
-            cancellationRate: 15.0
-          }
-        });
-        toast.showInfo('Dashboard API chưa được triển khai. Hiển thị dữ liệu mẫu.');
       } else {
         setError('Không thể tải dữ liệu dashboard. Vui lòng thử lại.');
         toast.showError('Không thể tải dữ liệu dashboard. Vui lòng thử lại.');
@@ -203,8 +213,20 @@ const DashboardPage = () => {
 
   return (
     <PageTemplate>
-      {/* Today's Stats */}
-      <ContentCard title="Thống kê hôm nay" sx={{ mb: 3 }}>
+      {/* Filter Section */}
+      <DashboardFilter
+        filterType={filterType}
+        onFilterTypeChange={(e) => setFilterType(e.target.value)}
+        specificDate={specificDate}
+        onSpecificDateChange={(e) => setSpecificDate(e.target.value)}
+        selectedMonth={selectedMonth}
+        onMonthChange={(e) => setSelectedMonth(e.target.value)}
+        selectedYear={selectedYear}
+        onYearChange={(e) => setSelectedYear(e.target.value)}
+      />
+
+      {/* Stats Section */}
+      <ContentCard title={`Thống kê: ${period}`} sx={{ mb: 3 }}>
         <Grid container spacing={3}>
           <Grid item xs={12} sm={6} md={2.4}>
             <StatCard 
@@ -271,9 +293,9 @@ const DashboardPage = () => {
           </ContentCard>
         </Grid>
 
-        {/* Today's Appointments */}
+        {/* Appointments List */}
         <Grid item xs={12} md={8}>
-          <ContentCard title="Lịch hẹn hôm nay">
+          <ContentCard title={`Danh sách lịch hẹn: ${period}`}>
             {loading ? (
               <Box display="flex" justifyContent="center" p={3}>
                 <CircularProgress />
@@ -300,7 +322,7 @@ const DashboardPage = () => {
                 ]}
                 data={dashboardData.todayAppointments}
                 showActions={false}
-                emptyMessage="Không có lịch hẹn nào hôm nay"
+                emptyMessage={`Không có lịch hẹn nào trong ${period.toLowerCase()}`}
               />
             )}
           </ContentCard>

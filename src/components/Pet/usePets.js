@@ -23,7 +23,7 @@ export const usePets = () => {
   const [customerLoadState, setCustomerLoadState] = useState(PET_CUSTOMER_LOAD_STATES.LOADING);
   const [pagination, setPagination] = useState({
     page: 1,
-    limit: 10,
+    limit: 15,
     total: 0,
     totalPages: 0
   });
@@ -33,7 +33,7 @@ export const usePets = () => {
   /**
    * Fetch all pets and customers data
    */
-  const fetchData = async (page = 1, limit = 10) => {
+  const fetchData = async (page = 1, limit = 15) => {
     try {
       setLoading(true);
       setError(null);
@@ -111,7 +111,7 @@ export const usePets = () => {
         setPets([]);
         setPagination({
           page: 1,
-          limit: 10,
+          limit: 15,
           total: 0,
           totalPages: 0
         });
@@ -220,7 +220,7 @@ export const usePets = () => {
 
   // Load data on mount
   useEffect(() => {
-    fetchData(1, 10);
+    fetchData(1, 15);
   }, []);
 
   return {

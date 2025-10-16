@@ -2,7 +2,7 @@ import apiService from './apiService';
 
 class PetService {
   // Get all pets (admin) with pagination and optional customer filter
-  async getAllPets(page = 1, limit = 10, customerId = null) {
+  async getAllPets(page = 1, limit = 15, customerId = null) {
     try {
       const params = {
         page,
@@ -131,7 +131,7 @@ class PetService {
   }
 
   // Search pets (admin)
-  async searchPets(searchTerm, page = 1, limit = 10) {
+  async searchPets(searchTerm, page = 1, limit = 15) {
     try {
       const params = {
         query: searchTerm, 
@@ -181,7 +181,7 @@ class PetService {
   async getPetsByCustomerId(customerId) {
     try {
       console.log('Getting pets for customer:', customerId);
-      const result = await apiService.get(`/pet/admin?customerId=${customerId}&limit=1000`);
+      const result = await apiService.get(`/pet/admin?customerId=${customerId}&limit=1000&page=1`);
       console.log('getPetsByCustomerId response:', result);
       
       // Extract pets from the response

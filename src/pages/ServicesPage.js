@@ -23,17 +23,30 @@ import PageTemplate from '../components/PageTemplate';
 import SearchFilterBar from '../components/SearchFilterBar';
 import { useToast } from '../components/ToastProvider';
 import { serviceService } from '../services';
+import { useServices } from '../components/Service/useServices';
 
 const ServicesPage = () => {
-  const [services, setServices] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [searchTerm, setSearchTerm] = useState('');
   const [selectedService, setSelectedService] = useState(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [dialogMode, setDialogMode] = useState('view'); // 'view', 'edit', 'create'
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [serviceToDelete, setServiceToDelete] = useState(null);
+
+  // Use services hook
+  const {
+    services,
+    loading,
+    error,
+    searchTerm,
+    pagination,
+    handleSearch,
+    handlePageChange,
+    handleLimitChange,
+    createService,
+    updateService,
+    deleteService,
+    setError
+  } = useServices();
 
   // Toast hook
   const toast = useToast();
@@ -48,54 +61,16 @@ const ServicesPage = () => {
   });
   const [formErrors, setFormErrors] = useState({});
 
-  useEffect(() => {
-    fetchServices();
-  }, []);
-
-  const fetchServices = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      
-      const data = await serviceService.getAllServices();
-      setServices(Array.isArray(data) ? data : []);
-    } catch (error) {
-      console.error('Error fetching services:', error);
-      setError(`Không thể tải danh sách dịch vụ: ${error.message}`);
-      toast.showError('Không thể tải danh sách dịch vụ. Vui lòng thử lại.');
-      setServices([]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleSearch = async (searchValue) => {
-    setSearchTerm(searchValue);
-    
+  // Debounced search handler
+  const handleSearchDebounced = (searchValue) => {
     // Clear previous timeout
     if (window.searchTimeout) {
       clearTimeout(window.searchTimeout);
     }
     
     // Set new timeout for debouncing (wait 500ms after user stops typing)
-    window.searchTimeout = setTimeout(async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        
-        if (searchValue.trim()) {
-          const data = await serviceService.searchServices(searchValue.trim());
-          setServices(Array.isArray(data) ? data : []);
-        } else {
-          await fetchServices();
-        }
-      } catch (error) {
-        console.error('Error searching services:', error);
-        setError(`Lỗi tìm kiếm: ${error.message}`);
-        toast.showError('Không thể tìm kiếm dịch vụ. Vui lòng thử lại.');
-      } finally {
-        setLoading(false);
-      }
+    window.searchTimeout = setTimeout(() => {
+      handleSearch(searchValue);
     }, 500);
   };
 
@@ -167,53 +142,31 @@ const ServicesPage = () => {
   const handleCreateService = async () => {
     if (!validateForm()) return;
     
-    try {
-      setLoading(true);
-      const serviceData = {
-        ...formData,
-        price: parseFloat(formData.price) || 0,
-        duration: parseInt(formData.duration) || 0
-      };
-      
-      await serviceService.createService(serviceData);
-      await fetchServices();
+    const serviceData = {
+      ...formData,
+      price: parseFloat(formData.price) || 0,
+      duration: parseInt(formData.duration) || 0
+    };
+    
+    const success = await createService(serviceData);
+    if (success) {
       closeDialog();
-      
-      // Show success toast
-      toast.showSuccess(`Đã thêm dịch vụ "${formData.serviceName}" thành công!`);
-      
-    } catch (error) {
-      console.error('Error creating service:', error);
-      toast.showError('Không thể tạo dịch vụ mới. Vui lòng thử lại.');
-    } finally {
-      setLoading(false);
     }
   };
 
   const handleUpdateService = async () => {
     if (!validateForm()) return;
     
-    try {
-      setLoading(true);
-      const serviceData = {
-        ...formData,
-        price: parseFloat(formData.price) || 0,
-        duration: parseInt(formData.duration) || 0
-      };
-      
-      const serviceId = selectedService.serviceId || selectedService.ServiceId;
-      await serviceService.updateService(serviceId, serviceData);
-      await fetchServices();
+    const serviceData = {
+      ...formData,
+      price: parseFloat(formData.price) || 0,
+      duration: parseInt(formData.duration) || 0
+    };
+    
+    const serviceId = selectedService.serviceId || selectedService.ServiceId;
+    const success = await updateService(serviceId, serviceData);
+    if (success) {
       closeDialog();
-      
-      // Show success toast
-      toast.showSuccess(`Đã cập nhật dịch vụ "${formData.serviceName}" thành công!`);
-      
-    } catch (error) {
-      console.error('Error updating service:', error);
-      toast.showError('Không thể cập nhật dịch vụ. Vui lòng thử lại.');
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -225,22 +178,10 @@ const ServicesPage = () => {
   const handleDeleteConfirm = async () => {
     if (!serviceToDelete) return;
     
-    try {
-      setLoading(true);
-      const serviceId = serviceToDelete.serviceId || serviceToDelete.ServiceId;
-      const serviceName = serviceToDelete.name || serviceToDelete.Name || serviceToDelete.serviceName || 'dịch vụ';
-      
-      await serviceService.deleteService(serviceId);
-      await fetchServices();
-      
-      // Show success toast
-      toast.showSuccess(`Đã xóa ${serviceName} thành công!`);
-      
-    } catch (error) {
-      console.error('Error deleting service:', error);
-      toast.showError('Không thể xóa dịch vụ. Vui lòng thử lại.');
-    } finally {
-      setLoading(false);
+    const serviceId = serviceToDelete.serviceId || serviceToDelete.ServiceId;
+    const success = await deleteService(serviceId);
+    
+    if (success) {
       setDeleteDialogOpen(false);
       setServiceToDelete(null);
     }
@@ -310,23 +251,6 @@ const ServicesPage = () => {
     }
   ];
 
-  // Show loading but with timeout to prevent infinite spinner
-  const [showLoading, setShowLoading] = useState(true);
-  useEffect(() => {
-    const timer = setTimeout(() => setShowLoading(false), 5000);
-    if (services.length > 0) setShowLoading(false);
-    return () => clearTimeout(timer);
-  }, [services.length]);
-
-  if (loading && services.length === 0 && showLoading) {
-    return (
-      <PageTemplate title="Quản lý dịch vụ" subtitle="Quản lý các dịch vụ y tế cho thú cưng">
-        <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
-          <CircularProgress />
-        </Box>
-      </PageTemplate>
-    );
-  }
 
   return (
     <PageTemplate title="Quản lý dịch vụ" subtitle="Quản lý các dịch vụ y tế cho thú cưng">
@@ -356,7 +280,7 @@ const ServicesPage = () => {
 
         <SearchFilterBar
           searchValue={searchTerm}
-          onSearchChange={handleSearch}
+          onSearchChange={handleSearchDebounced}
           placeholder="Tìm kiếm theo tên dịch vụ, mô tả..."
         />
 
@@ -368,6 +292,9 @@ const ServicesPage = () => {
           onView={(row) => openDialog('view', row)}
           onEdit={(row) => openDialog('edit', row)}
           onDelete={handleDeleteClick}
+          pagination={pagination}
+          onPageChange={handlePageChange}
+          onLimitChange={handleLimitChange}
         />
       </Paper>
 

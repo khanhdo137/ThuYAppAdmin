@@ -23,6 +23,12 @@ export const useAppointments = () => {
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState(APPOINTMENT_STATUS_FILTERS.ALL);
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 15,
+    total: 0,
+    totalPages: 0
+  });
 
   const toast = useToast();
 
@@ -40,13 +46,13 @@ export const useAppointments = () => {
   /**
    * Fetch all required data
    */
-  const fetchData = useCallback(async () => {
+  const fetchData = useCallback(async (page = 1, limit = 15) => {
     try {
       setLoading(true);
       setError(null);
       
       const results = await Promise.allSettled([
-        appointmentService.getAllAppointments(),
+        appointmentService.getAllAppointments(page, limit),
         petService.getAllPets(1, 1000),
         serviceService.getAllServices(),
         customerService.getCustomersForPetManagement(),
@@ -55,9 +61,37 @@ export const useAppointments = () => {
       
       const processedData = processApiData(results);
       
-      // Sort appointments by date before setting state
-      const sortedAppointments = sortAppointmentsByDate(processedData.appointments);
-      setAppointments(sortedAppointments);
+      // Handle appointments with pagination
+      const appointmentsData = results[0].status === 'fulfilled' ? results[0].value : null;
+      console.log('Raw appointments data:', appointmentsData);
+      
+      if (appointmentsData && appointmentsData.appointments && appointmentsData.pagination) {
+        // Handle paginated response
+        const sortedAppointments = sortAppointmentsByDate(appointmentsData.appointments);
+        setAppointments(sortedAppointments);
+        setPagination(appointmentsData.pagination);
+        console.log('Set pagination:', appointmentsData.pagination);
+      } else if (processedData.appointments && Array.isArray(processedData.appointments)) {
+        // Handle simple array response (fallback)
+        const sortedAppointments = sortAppointmentsByDate(processedData.appointments);
+        setAppointments(sortedAppointments);
+        // Set default pagination for non-paginated response
+        setPagination({
+          page: 1,
+          limit: 15,
+          total: processedData.appointments.length,
+          totalPages: 1
+        });
+      } else {
+        setAppointments([]);
+        setPagination({
+          page: 1,
+          limit: 15,
+          total: 0,
+          totalPages: 0
+        });
+      }
+      
       setPets(processedData.pets);
       setServices(processedData.services);
       setCustomers(processedData.customers);
@@ -99,7 +133,7 @@ export const useAppointments = () => {
   /**
    * Search appointments
    */
-  const handleSearch = useCallback(async (searchValue) => {
+  const handleSearch = useCallback(async (searchValue, page = 1) => {
     try {
       setLoading(true);
       setError(null);
@@ -107,14 +141,36 @@ export const useAppointments = () => {
       
       let data;
       if (searchValue?.trim()) {
-        data = await appointmentService.searchAppointments(searchValue);
+        data = await appointmentService.searchAppointments(searchValue, page, 15);
       } else {
-        data = await appointmentService.getAllAppointments();
+        data = await appointmentService.getAllAppointments(page, 15);
       }
       
-      // Sort appointments by date before setting state
-      const sortedAppointments = sortAppointmentsByDate(Array.isArray(data) ? data : []);
-      setAppointments(sortedAppointments);
+      // Handle paginated response
+      console.log('Search data:', data);
+      if (data && data.appointments && data.pagination) {
+        const sortedAppointments = sortAppointmentsByDate(data.appointments);
+        setAppointments(sortedAppointments);
+        setPagination(data.pagination);
+        console.log('Set search pagination:', data.pagination);
+      } else if (Array.isArray(data)) {
+        const sortedAppointments = sortAppointmentsByDate(data);
+        setAppointments(sortedAppointments);
+        setPagination({
+          page: 1,
+          limit: 15,
+          total: data.length,
+          totalPages: 1
+        });
+      } else {
+        setAppointments([]);
+        setPagination({
+          page: 1,
+          limit: 15,
+          total: 0,
+          totalPages: 0
+        });
+      }
     } catch (error) {
       setError(APPOINTMENT_ERROR_MESSAGES.SEARCH_FAILED);
       toast.showError(APPOINTMENT_ERROR_MESSAGES.SEARCH_FAILED);
@@ -127,27 +183,75 @@ export const useAppointments = () => {
   /**
    * Filter appointments by status
    */
-  const handleStatusFilter = useCallback(async (status) => {
+  const handleStatusFilter = useCallback(async (status, page = 1) => {
     try {
       setLoading(true);
       setStatusFilter(status);
       
       let data;
       if (status === APPOINTMENT_STATUS_FILTERS.ALL) {
-        data = await appointmentService.getAllAppointments();
+        data = await appointmentService.getAllAppointments(page, 15);
       } else {
-        data = await appointmentService.getAppointmentsByStatus(parseInt(status));
+        data = await appointmentService.getAppointmentsByStatus(parseInt(status), page);
       }
       
-      // Sort appointments by date before setting state
-      const sortedAppointments = sortAppointmentsByDate(Array.isArray(data) ? data : []);
-      setAppointments(sortedAppointments);
+      // Handle paginated response
+      console.log('Status filter data:', data);
+      if (data && data.appointments && data.pagination) {
+        const sortedAppointments = sortAppointmentsByDate(data.appointments);
+        setAppointments(sortedAppointments);
+        setPagination(data.pagination);
+        console.log('Set status filter pagination:', data.pagination);
+      } else if (Array.isArray(data)) {
+        const sortedAppointments = sortAppointmentsByDate(data);
+        setAppointments(sortedAppointments);
+        setPagination({
+          page: 1,
+          limit: 15,
+          total: data.length,
+          totalPages: 1
+        });
+      } else {
+        setAppointments([]);
+        setPagination({
+          page: 1,
+          limit: 15,
+          total: 0,
+          totalPages: 0
+        });
+      }
     } catch (error) {
       toast.showError('Không thể lọc lịch hẹn theo trạng thái. Vui lòng thử lại.');
     } finally {
       setLoading(false);
     }
   }, [sortAppointmentsByDate, toast]);
+
+  /**
+   * Handle page change
+   */
+  const handlePageChange = useCallback((newPage) => {
+    if (searchTerm?.trim()) {
+      handleSearch(searchTerm, newPage);
+    } else if (statusFilter !== APPOINTMENT_STATUS_FILTERS.ALL) {
+      handleStatusFilter(statusFilter, newPage);
+    } else {
+      fetchData(newPage, pagination.limit);
+    }
+  }, [searchTerm, statusFilter, pagination.limit, handleSearch, handleStatusFilter, fetchData]);
+
+  /**
+   * Handle rows per page change
+   */
+  const handleLimitChange = useCallback((newLimit) => {
+    if (searchTerm?.trim()) {
+      handleSearch(searchTerm, 1);
+    } else if (statusFilter !== APPOINTMENT_STATUS_FILTERS.ALL) {
+      handleStatusFilter(statusFilter, 1);
+    } else {
+      fetchData(1, newLimit);
+    }
+  }, [searchTerm, statusFilter, handleSearch, handleStatusFilter, fetchData]);
 
   /**
    * Create new appointment
@@ -249,7 +353,7 @@ export const useAppointments = () => {
 
   // Load data on mount
   useEffect(() => {
-    fetchData();
+    fetchData(1, 15);
   }, [fetchData]);
 
   return {
@@ -263,11 +367,14 @@ export const useAppointments = () => {
     error,
     searchTerm,
     statusFilter,
+    pagination,
     
     // Actions
     fetchData,
     handleSearch,
     handleStatusFilter,
+    handlePageChange,
+    handleLimitChange,
     createAppointment,
     updateAppointment,
     updateAppointmentStatus,

@@ -27,7 +27,10 @@ const PetsPage = () => {
     error,
     searchTerm,
     customerLoadState,
+    pagination,
     handleSearch,
+    handlePageChange,
+    handleLimitChange,
     createPet,
     updatePet,
     deletePet,
@@ -121,6 +124,9 @@ const PetsPage = () => {
           onView={(row) => openDialog(PET_DIALOG_MODES.VIEW, row)}
           onEdit={(row) => openDialog(PET_DIALOG_MODES.EDIT, row)}
           onDelete={(row) => deletePet(row.petId)}
+          pagination={pagination}
+          onPageChange={handlePageChange}
+          onLimitChange={handleLimitChange}
         />
       </Paper>
 

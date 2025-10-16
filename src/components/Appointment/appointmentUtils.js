@@ -81,7 +81,16 @@ export const processApiData = (results) => {
   // Process appointments
   let appointments = [];
   if (appointmentsResult.status === 'fulfilled') {
-    appointments = Array.isArray(appointmentsResult.value) ? appointmentsResult.value : [];
+    const appointmentsData = appointmentsResult.value;
+    console.log('Processing appointments data:', appointmentsData);
+    
+    if (appointmentsData && appointmentsData.appointments && Array.isArray(appointmentsData.appointments)) {
+      appointments = appointmentsData.appointments;
+    } else if (Array.isArray(appointmentsData)) {
+      appointments = appointmentsData;
+    }
+    
+    console.log('Processed appointments:', appointments);
   }
 
   // Process pets

@@ -1,6 +1,7 @@
 // UI Components
 export { default as ActionButton } from './ActionButton';
 export { default as ContentCard } from './ContentCard';
+export { default as DashboardFilter } from './DashboardFilter';
 export { default as DataTable } from './DataTable';
 export { default as PageTemplate } from './PageTemplate';
 export { default as SearchFilterBar } from './SearchFilterBar';

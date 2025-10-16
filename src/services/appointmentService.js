@@ -7,7 +7,7 @@ class AppointmentService {
   }
 
   // Get all appointments (for admin)
-  async getAllAppointments(page = 1, limit = 100, status = null, date = null) {
+  async getAllAppointments(page = 1, limit = 15, status = null, date = null) {
     try {
       const params = new URLSearchParams({
         page: page.toString(),
@@ -28,9 +28,11 @@ class AppointmentService {
       });
       
       const result = await apiService.handleResponse(response);
+      console.log('getAllAppointments result:', result);
       
       // Backend returns { appointments: [], pagination: {} }
-      return result.appointments || [];
+      // Return the full result object with both appointments and pagination
+      return result || { appointments: [], pagination: { page: 1, limit: 15, total: 0, totalPages: 0 } };
     } catch (error) {
       console.error('Error getting all appointments:', error);
       throw error;
@@ -52,7 +54,7 @@ class AppointmentService {
   }
 
   // Search appointments (for admin)
-  async searchAppointments(searchTerm, page = 1, limit = 100) {
+  async searchAppointments(searchTerm, page = 1, limit = 15) {
     try {
       console.log('Searching appointments with term:', searchTerm);
       const params = {
@@ -65,7 +67,8 @@ class AppointmentService {
       console.log('Search result:', result);
       
       // Backend returns { appointments: [], pagination: {} }
-      return result?.appointments || [];
+      // Return the full result object with both appointments and pagination
+      return result || { appointments: [], pagination: { page: 1, limit: 15, total: 0, totalPages: 0 } };
     } catch (error) {
       console.error('Error searching appointments:', error);
       throw error;
@@ -164,13 +167,13 @@ class AppointmentService {
   }
 
   // Filter appointments by status
-  async getAppointmentsByStatus(status) {
-    return await this.getAllAppointments(1, 100, status);
+  async getAppointmentsByStatus(status, page = 1, limit = 15) {
+    return await this.getAllAppointments(page, limit, status);
   }
 
   // Filter appointments by date
-  async getAppointmentsByDate(date) {
-    return await this.getAllAppointments(1, 100, null, date);
+  async getAppointmentsByDate(date, page = 1, limit = 15) {
+    return await this.getAllAppointments(page, limit, null, date);
   }
 
   // Get status options
@@ -294,7 +297,7 @@ class AppointmentService {
       console.log('Getting appointments for customer:', customerId);
       
       // Get all appointments and filter by customer
-      const result = await apiService.get('/appointment/admin?limit=1000');
+      const result = await apiService.get('/appointment/admin?limit=1000&page=1');
       console.log('getAppointmentsByCustomerId response:', result);
       
       // Backend returns { appointments: [], pagination: {} }

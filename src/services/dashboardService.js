@@ -4,7 +4,7 @@ const dashboardService = {
   // Get simple dashboard stats
   getSimpleDashboard: async () => {
     try {
-      const response = await apiService.get('/Dashboard/simple');
+      const response = await apiService.get('Dashboard/simple');
       return response;
     } catch (error) {
       console.error('Error getting simple dashboard data:', error);
@@ -15,7 +15,7 @@ const dashboardService = {
   // Get detailed analytics
   getDashboardAnalytics: async (period = 'month') => {
     try {
-      const response = await apiService.getWithParams('/Dashboard/analytics', { period });
+      const response = await apiService.getWithParams('Dashboard/analytics', { period });
       return response;
     } catch (error) {
       console.error('Error getting dashboard analytics:', error);
@@ -26,7 +26,7 @@ const dashboardService = {
   // Get completion trends
   getCompletionTrends: async (period = 'month', periods = 12) => {
     try {
-      const response = await apiService.getWithParams('/Dashboard/completion-trends', { period, periods });
+      const response = await apiService.getWithParams('Dashboard/completion-trends', { period, periods });
       return response;
     } catch (error) {
       console.error('Error getting completion trends:', error);
@@ -37,7 +37,7 @@ const dashboardService = {
   // Get performance comparison
   getPerformanceByPeriod: async (period = 'month') => {
     try {
-      const response = await apiService.getWithParams('/Dashboard/performance-by-period', { period });
+      const response = await apiService.getWithParams('Dashboard/performance-by-period', { period });
       return response;
     } catch (error) {
       console.error('Error getting performance data:', error);
@@ -48,7 +48,7 @@ const dashboardService = {
   // Get today's appointments
   getTodayDashboard: async () => {
     try {
-      const response = await apiService.get('/Dashboard/today');
+      const response = await apiService.get('Dashboard/today');
       return response;
     } catch (error) {
       console.error('Error getting today dashboard:', error);
@@ -304,6 +304,58 @@ const dashboardService = {
       console.error('API Error:', error);
       throw error;
     }
+  },
+
+  // === FLEXIBLE DASHBOARD FILTERS ===
+  
+  // Get dashboard with flexible filter
+  getFlexibleDashboard: async (filterType = 'today', params = {}) => {
+    try {
+      const queryParams = { filterType, ...params };
+      const response = await apiService.getWithParams('Dashboard/flexible', queryParams);
+      return response;
+    } catch (error) {
+      console.error('Error getting flexible dashboard:', error);
+      throw error;
+    }
+  },
+
+  // Specific filter methods
+  getTodayData: async () => {
+    return await dashboardService.getFlexibleDashboard('today');
+  },
+
+  getSpecificDateData: async (date) => {
+    return await dashboardService.getFlexibleDashboard('specific-date', { specificDate: date });
+  },
+
+  getLast7DaysData: async () => {
+    return await dashboardService.getFlexibleDashboard('last-7-days');
+  },
+
+  getThisWeekData: async () => {
+    return await dashboardService.getFlexibleDashboard('this-week');
+  },
+
+  getLastWeekData: async () => {
+    return await dashboardService.getFlexibleDashboard('last-week');
+  },
+
+  getSpecificMonthData: async (month, year = new Date().getFullYear()) => {
+    return await dashboardService.getFlexibleDashboard('specific-month', { month, year });
+  },
+
+  // Format filter display for UI
+  getFilterTypeLabel: (filterType) => {
+    const labels = {
+      'today': 'Hôm nay',
+      'specific-date': 'Ngày cụ thể',
+      'last-7-days': '7 ngày gần nhất',
+      'this-week': 'Tuần này',
+      'last-week': 'Tuần trước',
+      'specific-month': 'Tháng cụ thể'
+    };
+    return labels[filterType] || 'Hôm nay';
   }
 };
 
