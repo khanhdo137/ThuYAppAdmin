@@ -20,12 +20,16 @@ import {
   Close as CloseIcon,
   Person as PersonIcon,
   AdminPanelSettings as AdminIcon,
-  KeyboardArrowDown as ScrollDownIcon
+  KeyboardArrowDown as ScrollDownIcon,
+  PhotoCamera as CameraIcon,
+  Image as ImageIcon
 } from '@mui/icons-material';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import chatService from '../../services/chatService';
 import { optimizeMessageUpdates, smartScroll } from '../../utils/chatOptimization';
+import DirectImageUpload from '../DirectImageUpload';
+import { useToast } from '../ToastProvider';
 
 const ChatDialog = ({ open, onClose, chatRoom, onMessageSent }) => {
   const [messages, setMessages] = useState([]);
@@ -36,6 +40,10 @@ const ChatDialog = ({ open, onClose, chatRoom, onMessageSent }) => {
   const [lastMessageCount, setLastMessageCount] = useState(0);
   const [showScrollButton, setShowScrollButton] = useState(false);
   const [messagePollingInterval, setMessagePollingInterval] = useState(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [selectedImage, setSelectedImage] = useState(null);
+  const [showImageUpload, setShowImageUpload] = useState(false);
+  const toast = useToast();
 
   useEffect(() => {
     if (open && chatRoom) {
@@ -239,6 +247,102 @@ const ChatDialog = ({ open, onClose, chatRoom, onMessageSent }) => {
     }
   };
 
+  const handleImageUpload = async (file) => {
+    setUploadingImage(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      
+      const response = await fetch('/api/upload/cloudinary', {
+        method: 'POST',
+        body: formData,
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error('Upload failed');
+      }
+      
+      const result = await response.json();
+      setSelectedImage(result.url);
+      setUploadingImage(false);
+      toast.showSuccess('Ảnh đã được tải lên thành công');
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      toast.showError('Không thể tải lên hình ảnh');
+      setUploadingImage(false);
+    }
+  };
+
+  const handleSendImage = async () => {
+    if (!selectedImage || !chatRoom) return;
+    
+    try {
+      setSending(true);
+      
+      // Optimistic update - add image message to UI immediately
+      const optimisticMessage = {
+        messageId: `temp_img_${Date.now()}`,
+        messageContent: '[Hình ảnh]',
+        messageType: 1,
+        fileUrl: selectedImage,
+        senderType: 1, // Admin
+        senderName: 'Admin',
+        createdAt: new Date().toISOString(),
+        isOptimistic: true
+      };
+      
+      setMessages(prev => [...prev, optimisticMessage]);
+      
+      // Smooth scroll to bottom after adding message
+      setTimeout(() => {
+        forceScrollToBottom();
+      }, 50);
+      
+      // Send to server
+      await chatService.sendAdminMessage(chatRoom.roomId, '[Hình ảnh]', 1, selectedImage);
+      
+      // Replace optimistic message with real message
+      const realMessage = {
+        messageId: `real_img_${Date.now()}`,
+        messageContent: '[Hình ảnh]',
+        messageType: 1,
+        fileUrl: selectedImage,
+        senderType: 1,
+        senderName: 'Admin',
+        createdAt: new Date().toISOString(),
+        isOptimistic: false
+      };
+      
+      setMessages(prev => prev.map(msg => 
+        msg.isOptimistic ? realMessage : msg
+      ));
+      
+      // Notify parent component for table updates
+      onMessageSent?.(chatRoom.roomId, '[Hình ảnh]');
+      
+      // Trigger global message sent handler
+      if (window.chatMessageSentHandler) {
+        window.chatMessageSentHandler(chatRoom.roomId, '[Hình ảnh]');
+      }
+      
+      // Clear selected image and hide upload section
+      setSelectedImage(null);
+      setShowImageUpload(false);
+      toast.showSuccess('Đã gửi hình ảnh thành công');
+      
+    } catch (error) {
+      console.error('Error sending image:', error);
+      // Remove optimistic message on error
+      setMessages(prev => prev.filter(msg => !msg.isOptimistic));
+      toast.showError('Không thể gửi hình ảnh');
+    } finally {
+      setSending(false);
+    }
+  };
+
   const formatMessageTime = (dateTime) => {
     try {
       if (!dateTime) return '--:--';
@@ -370,9 +474,31 @@ const ChatDialog = ({ open, onClose, chatRoom, onMessageSent }) => {
                             {formatMessageTime(message.createdAt)}
                           </Typography>
                         </Box>
-                        <Typography variant="body2">
-                          {message.messageContent}
-                        </Typography>
+                        {message.messageType === 1 && message.fileUrl ? (
+                          <Box>
+                            <Box
+                              component="img"
+                              src={message.fileUrl}
+                              alt="Chat image"
+                              sx={{
+                                maxWidth: 200,
+                                maxHeight: 200,
+                                borderRadius: 1,
+                                mb: 1,
+                                objectFit: 'cover',
+                                cursor: 'pointer'
+                              }}
+                              onClick={() => window.open(message.fileUrl, '_blank')}
+                            />
+                            <Typography variant="body2">
+                              {message.messageContent}
+                            </Typography>
+                          </Box>
+                        ) : (
+                          <Typography variant="body2">
+                            {message.messageContent}
+                          </Typography>
+                        )}
                       </Paper>
                     </Box>
                   ))}
@@ -413,26 +539,76 @@ const ChatDialog = ({ open, onClose, chatRoom, onMessageSent }) => {
         </Box>
       </DialogContent>
 
-      <DialogActions sx={{ p: 2 }}>
-        <TextField
-          fullWidth
-          multiline
-          maxRows={3}
-          placeholder="Nhập tin nhắn..."
-          value={newMessage}
-          onChange={(e) => setNewMessage(e.target.value)}
-          onKeyPress={handleKeyPress}
-          disabled={sending}
-          sx={{ mr: 1 }}
-        />
-        <Button
-          variant="contained"
-          onClick={handleSendMessage}
-          disabled={!newMessage.trim() || sending}
-          startIcon={sending ? <CircularProgress size={20} /> : <SendIcon />}
-        >
-          {sending ? 'Đang gửi...' : 'Gửi'}
-        </Button>
+      <DialogActions sx={{ p: 2, flexDirection: 'column', alignItems: 'stretch' }}>
+        {/* Image Upload Section */}
+        {showImageUpload && (
+          <Box sx={{ mb: 2, p: 2, border: 1, borderColor: 'divider', borderRadius: 1 }}>
+            <Typography variant="subtitle2" gutterBottom>
+              Gửi hình ảnh:
+            </Typography>
+            <DirectImageUpload
+              currentImageUrl={selectedImage}
+              onImageUpload={handleImageUpload}
+              onImageRemove={() => setSelectedImage(null)}
+              uploading={uploadingImage}
+              maxSize={5}
+            />
+            {selectedImage && (
+              <Box sx={{ display: 'flex', gap: 1, mt: 1 }}>
+                <Button
+                  variant="contained"
+                  onClick={handleSendImage}
+                  disabled={sending}
+                  startIcon={sending ? <CircularProgress size={20} /> : <SendIcon />}
+                  size="small"
+                >
+                  {sending ? 'Đang gửi...' : 'Gửi ảnh'}
+                </Button>
+                <Button
+                  variant="outlined"
+                  onClick={() => {
+                    setSelectedImage(null);
+                    setShowImageUpload(false);
+                  }}
+                  size="small"
+                >
+                  Hủy
+                </Button>
+              </Box>
+            )}
+          </Box>
+        )}
+
+        {/* Text Message Input */}
+        <Box sx={{ display: 'flex', alignItems: 'flex-end', gap: 1 }}>
+          <IconButton
+            onClick={() => setShowImageUpload(!showImageUpload)}
+            color="primary"
+            disabled={sending}
+          >
+            <CameraIcon />
+          </IconButton>
+          
+          <TextField
+            fullWidth
+            multiline
+            maxRows={3}
+            placeholder="Nhập tin nhắn..."
+            value={newMessage}
+            onChange={(e) => setNewMessage(e.target.value)}
+            onKeyPress={handleKeyPress}
+            disabled={sending}
+          />
+          
+          <Button
+            variant="contained"
+            onClick={handleSendMessage}
+            disabled={!newMessage.trim() || sending}
+            startIcon={sending ? <CircularProgress size={20} /> : <SendIcon />}
+          >
+            {sending ? 'Đang gửi...' : 'Gửi'}
+          </Button>
+        </Box>
       </DialogActions>
     </Dialog>
   );
