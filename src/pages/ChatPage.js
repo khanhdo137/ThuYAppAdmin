@@ -109,8 +109,42 @@ const ChatPage = () => {
     }
   };
 
-  const handleMessageSent = () => {
-    setRefresh(prev => prev + 1); // Refresh the list
+  const handleMessageSent = (roomId, messageContent, isReadAction = false) => {
+    // Optimistic update - update only the specific room
+    setChatRooms(prevRooms => {
+      const roomIndex = prevRooms.findIndex(room => room.roomId === roomId);
+      if (roomIndex === -1) return prevRooms;
+      
+      const updatedRoom = { ...prevRooms[roomIndex] };
+      
+      if (isReadAction) {
+        // Just mark as read, don't change other properties
+        updatedRoom.unreadCount = 0;
+      } else {
+        // Update message content and move to top
+        updatedRoom.lastMessage = messageContent.length > 100 ? 
+          messageContent.substring(0, 100) + "..." : messageContent;
+        updatedRoom.lastMessageAt = new Date().toLocaleTimeString('vi-VN', { 
+          hour: '2-digit', 
+          minute: '2-digit' 
+        });
+        updatedRoom.unreadCount = 0;
+      }
+      
+      // Create new array
+      const newRooms = [...prevRooms];
+      newRooms[roomIndex] = updatedRoom;
+      
+      // Move room to top only if it's a new message (not read action)
+      if (!isReadAction) {
+        newRooms.splice(roomIndex, 1);
+        newRooms.unshift(updatedRoom);
+      }
+      
+      return newRooms;
+    });
+    
+    setLastUpdate(new Date());
   };
 
   const handleRefresh = async () => {
@@ -276,4 +310,3 @@ const ChatPage = () => {
 };
 
 export default ChatPage;
-

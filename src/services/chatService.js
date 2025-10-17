@@ -71,13 +71,23 @@ export const chatService = {
       if (chatRoomsCache && chatRoomsCache.rooms) {
         const roomIndex = chatRoomsCache.rooms.findIndex(room => room.roomId === roomId);
         if (roomIndex !== -1) {
+          const now = new Date();
           chatRoomsCache.rooms[roomIndex].lastMessage = messageContent.length > 100 ? 
             messageContent.substring(0, 100) + "..." : messageContent;
-          chatRoomsCache.rooms[roomIndex].lastMessageAt = formatChatRoomTime(new Date().toISOString());
+          chatRoomsCache.rooms[roomIndex].lastMessageAt = now.toLocaleTimeString('vi-VN', { 
+            hour: '2-digit', 
+            minute: '2-digit' 
+          });
           chatRoomsCache.rooms[roomIndex].unreadCount = 0; // Admin sent message, so no unread
+          
+          // Move this room to the top of the list (most recent)
+          const updatedRoom = chatRoomsCache.rooms[roomIndex];
+          chatRoomsCache.rooms.splice(roomIndex, 1);
+          chatRoomsCache.rooms.unshift(updatedRoom);
         }
       }
       
+      console.log('ChatService: Message sent successfully, cache updated optimistically');
       return response;
     } catch (error) {
       console.error('Error sending admin message:', error);
@@ -164,6 +174,26 @@ export const chatService = {
   isCacheValid() {
     const now = Date.now();
     return chatRoomsCache && (now - lastFetchTime) < CACHE_DURATION;
+  },
+
+  // Mark messages as read
+  async markAsRead(roomId) {
+    try {
+      const response = await apiService.post(`${CHAT_API_BASE}/admin/room/${roomId}/mark-read`);
+      
+      // Update cache optimistically
+      if (chatRoomsCache && chatRoomsCache.rooms) {
+        const roomIndex = chatRoomsCache.rooms.findIndex(room => room.roomId === roomId);
+        if (roomIndex !== -1) {
+          chatRoomsCache.rooms[roomIndex].unreadCount = 0;
+        }
+      }
+      
+      return response;
+    } catch (error) {
+      console.error('Error marking messages as read:', error);
+      throw error;
+    }
   }
 };
 

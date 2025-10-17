@@ -27,6 +27,7 @@ import {
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import chatService from '../../services/chatService';
+import apiService from '../../services/apiService';
 import { optimizeMessageUpdates, smartScroll } from '../../utils/chatOptimization';
 import DirectImageUpload from '../DirectImageUpload';
 import { useToast } from '../ToastProvider';
@@ -49,10 +50,29 @@ const ChatDialog = ({ open, onClose, chatRoom, onMessageSent }) => {
     if (open && chatRoom) {
       loadMessages();
       startMessagePolling();
+      
+      // Mark messages as read when opening chat
+      markMessagesAsRead();
     } else {
       stopMessagePolling();
     }
   }, [open, chatRoom]);
+
+  const markMessagesAsRead = async () => {
+    if (!chatRoom || !chatRoom.roomId) return;
+    
+    try {
+      await chatService.markAsRead(chatRoom.roomId);
+      console.log('Messages marked as read');
+      
+      // Notify parent to update unread count in table
+      if (onMessageSent) {
+        onMessageSent(chatRoom.roomId, null, true); // Pass true to indicate read action
+      }
+    } catch (error) {
+      console.error('Error marking messages as read:', error);
+    }
+  };
 
   // Auto-scroll to bottom when dialog opens
   useEffect(() => {
@@ -223,13 +243,8 @@ const ChatDialog = ({ open, onClose, chatRoom, onMessageSent }) => {
         msg.isOptimistic ? realMessage : msg
       ));
       
-      // Notify parent component for table updates with specific room data
+      // Notify parent component for optimistic update with specific room data
       onMessageSent?.(chatRoom.roomId, messageText);
-      
-      // Also trigger global message sent handler if it exists with room data
-      if (window.chatMessageSentHandler) {
-        window.chatMessageSentHandler(chatRoom.roomId, messageText);
-      }
       
     } catch (error) {
       console.error('Error sending message:', error);
@@ -250,28 +265,43 @@ const ChatDialog = ({ open, onClose, chatRoom, onMessageSent }) => {
   const handleImageUpload = async (file) => {
     setUploadingImage(true);
     try {
+      console.log('=== IMAGE UPLOAD DEBUG ===');
+      console.log('File:', file.name, file.type, file.size);
+      
+      // Tạo FormData
       const formData = new FormData();
       formData.append('file', file);
+      formData.append('upload_preset', 'ThuYHuongNo'); // Sử dụng preset từ cloudinaryService.ts
       
-      const response = await fetch('/api/upload/cloudinary', {
+      console.log('Uploading directly to Cloudinary...');
+      
+      // Upload trực tiếp lên Cloudinary (giống như React Native app)
+      const cloudinaryUrl = 'https://api.cloudinary.com/v1_1/dl6lq6ord/image/upload';
+      
+      const response = await fetch(cloudinaryUrl, {
         method: 'POST',
-        body: formData,
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
+        body: formData
       });
       
+      console.log('Response status:', response.status);
+      
       if (!response.ok) {
-        throw new Error('Upload failed');
+        const errorText = await response.text();
+        console.error('Upload error response:', errorText);
+        throw new Error(`Upload failed with status ${response.status}`);
       }
       
       const result = await response.json();
-      setSelectedImage(result.url);
+      console.log('Upload success:', result);
+      console.log('Image URL:', result.secure_url);
+      
+      // Lưu URL ảnh (secure_url từ Cloudinary response)
+      setSelectedImage(result.secure_url);
       setUploadingImage(false);
       toast.showSuccess('Ảnh đã được tải lên thành công');
     } catch (error) {
       console.error('Error uploading image:', error);
-      toast.showError('Không thể tải lên hình ảnh');
+      toast.showError(`Không thể tải lên hình ảnh: ${error.message}`);
       setUploadingImage(false);
     }
   };
@@ -320,13 +350,8 @@ const ChatDialog = ({ open, onClose, chatRoom, onMessageSent }) => {
         msg.isOptimistic ? realMessage : msg
       ));
       
-      // Notify parent component for table updates
+      // Notify parent component for optimistic update
       onMessageSent?.(chatRoom.roomId, '[Hình ảnh]');
-      
-      // Trigger global message sent handler
-      if (window.chatMessageSentHandler) {
-        window.chatMessageSentHandler(chatRoom.roomId, '[Hình ảnh]');
-      }
       
       // Clear selected image and hide upload section
       setSelectedImage(null);

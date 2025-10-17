@@ -247,6 +247,38 @@ class ApiService {
       throw error;
     }
   }
+
+  // POST FormData (for file uploads)
+  async postFormData(endpoint, formData, options = {}) {
+    try {
+      const url = `${API_BASE_URL}/${endpoint}`;
+      
+      console.log('API POST FormData URL:', url);
+      
+      // Get auth headers without Content-Type (browser will set it with boundary)
+      const headers = {};
+      const token = authService.getToken();
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+      
+      const response = await this.fetchWithFallback(url, {
+        method: 'POST',
+        headers: headers,
+        body: formData,
+        ...options
+      });
+      
+      console.log('API POST FormData Response Status:', response.status);
+      const result = await this.handleResponse(response);
+      console.log('API POST FormData Result:', result);
+      
+      return result;
+    } catch (error) {
+      console.error(`Error with POST FormData ${endpoint}:`, error);
+      throw error;
+    }
+  }
 }
 
 const apiService = new ApiService();
