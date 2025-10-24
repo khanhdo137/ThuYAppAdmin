@@ -163,33 +163,60 @@ const CustomersPage = () => {
 
   // Fetch customer details (pets and appointments)
   const fetchCustomerDetails = async (customer) => {
-    if (!customer || !customer.customerId) {
-      console.log('No customer or customerId provided');
+    // Get customerId from multiple possible field names
+    const customerId = customer?.customerId || customer?.CustomerId || customer?.customerID;
+    
+    if (!customer || !customerId) {
+      console.error('❌ No customer or customerId provided. Customer data:', customer);
       return;
     }
     
     try {
       setLoadingCustomerDetails(true);
-      console.log('Fetching details for customer:', customer.customerId);
+      console.log('========================================');
+      console.log('🔍 Fetching details for customer:');
+      console.log('  - CustomerId:', customerId);
+      console.log('  - Customer Name:', customer.customerName || customer.CustomerName);
+      console.log('  - Full customer data:', customer);
+      console.log('========================================');
       
       // First get the customer's pets
-      const pets = await petService.getPetsByCustomerId(customer.customerId);
-      console.log('Fetched pets:', pets);
+      console.log('📋 Step 1: Fetching pets...');
+      const pets = await petService.getPetsByCustomerId(customerId);
+      console.log('✅ Pets fetched:', pets.length, 'pets');
+      console.log('   Pet IDs:', pets.map(p => p.petId));
       
       // Get all appointments and filter by customer's pets
-      const allAppointments = await appointmentService.getAllAppointments(1, 1000);
-      const petIds = pets.map(pet => pet.petId);
-      const customerAppointments = allAppointments.filter(appointment => 
-        petIds.includes(appointment.petId)
-      );
+      console.log('📋 Step 2: Fetching appointments...');
+      const appointmentsResult = await appointmentService.getAllAppointments(1, 1000);
+      console.log('✅ Appointments result:', appointmentsResult);
       
-      console.log('Filtered appointments:', customerAppointments);
+      // Extract appointments array from result
+      const allAppointments = appointmentsResult.appointments || appointmentsResult || [];
+      console.log('✅ All appointments array:', allAppointments.length);
+      
+      const petIds = pets.map(pet => pet.petId);
+      console.log('📋 Step 3: Filtering appointments by pet IDs:', petIds);
+      
+      const customerAppointments = allAppointments.filter(appointment => {
+        // Check both petId and PetId (camelCase and PascalCase)
+        const appointmentPetId = appointment.petId || appointment.PetId;
+        const match = petIds.includes(appointmentPetId);
+        if (match) {
+          console.log('   ✓ Match found:', appointment.appointmentId || appointment.AppointmentId, 'for pet', appointmentPetId);
+        }
+        return match;
+      });
+      
+      console.log('✅ Customer appointments:', customerAppointments.length);
+      console.log('========================================');
       
       setCustomerPets(pets || []);
       setCustomerAppointments(customerAppointments || []);
       
     } catch (error) {
-      console.error('Error fetching customer details:', error);
+      console.error('❌ Error fetching customer details:', error);
+      console.error('Error stack:', error.stack);
       setCustomerPets([]);
       setCustomerAppointments([]);
     } finally {

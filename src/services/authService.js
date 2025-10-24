@@ -1,6 +1,6 @@
 // Thử cả HTTPS và HTTP cho localhost
-const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://192.168.1.27:5074/api';
-const API_BASE_URL_HTTP = 'http://192.168.1.27:5074/api';
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://192.168.1.35:5074/api';
+const API_BASE_URL_HTTP = 'http://192.168.1.35:5074/api';
 
 // Role constants - ĐÚNG theo backend
 const ROLES = {
@@ -19,15 +19,14 @@ class AuthService {
   // Helper method để thử kết nối với cả HTTPS và HTTP
   async fetchWithFallback(url, options) {
     try {
-      // Thử HTTPS trước
-      const httpsUrl = url.replace(API_BASE_URL_HTTP, API_BASE_URL);
-      const response = await fetch(httpsUrl, options);
+      // Thử HTTP trước (vì server chỉ chạy HTTP)
+      const response = await fetch(url, options);
       return response;
     } catch (error) {
-      console.warn('HTTPS failed, trying HTTP:', error.message);
-      // Nếu HTTPS fail, thử HTTP
-      const httpUrl = url.replace(API_BASE_URL, API_BASE_URL_HTTP);
-      return await fetch(httpUrl, options);
+      console.warn('HTTP failed, trying alternative:', error.message);
+      // Nếu HTTP fail, thử với localhost
+      const localhostUrl = url.replace('192.168.1.35', 'localhost');
+      return await fetch(localhostUrl, options);
     }
   }
 

@@ -180,21 +180,40 @@ class PetService {
   // Get pets by customer ID (admin)
   async getPetsByCustomerId(customerId) {
     try {
-      console.log('Getting pets for customer:', customerId);
-      const result = await apiService.get(`/pet/admin?customerId=${customerId}&limit=1000&page=1`);
-      console.log('getPetsByCustomerId response:', result);
+      console.log('===== getPetsByCustomerId START =====');
+      console.log('Getting pets for customer:', customerId, 'Type:', typeof customerId);
+      
+      // Ensure customerId is a number (backend expects integer)
+      const customerIdNum = parseInt(customerId, 10);
+      if (isNaN(customerIdNum)) {
+        console.error('Invalid customerId - not a number:', customerId);
+        return [];
+      }
+      
+      console.log('Calling API: /Pet/admin?customerId=' + customerIdNum);
+      
+      // Call API with customerId as query parameter
+      const result = await apiService.get(`/Pet/admin?customerId=${customerIdNum}&limit=1000&page=1`);
+      console.log('getPetsByCustomerId full response:', result);
       
       // Extract pets from the response
       const { pets = [] } = result || {};
+      console.log('Extracted pets array:', pets);
+      console.log('Pets count:', pets.length);
       
       if (!Array.isArray(pets)) {
         console.error('Invalid pets data format:', pets);
         return [];
       }
       
-      return pets.map(pet => this.normalizePetData(pet));
+      const normalizedPets = pets.map(pet => this.normalizePetData(pet));
+      console.log('Normalized pets:', normalizedPets);
+      console.log('===== getPetsByCustomerId END =====');
+      
+      return normalizedPets;
     } catch (error) {
-      console.error('Error in getPetsByCustomerId:', error);
+      console.error('❌ Error in getPetsByCustomerId:', error);
+      console.error('Error details:', error.message, error.stack);
       return [];
     }
   }
@@ -205,18 +224,35 @@ class PetService {
     
     return {
       petId: pet.petId || pet.PetId,
+      PetId: pet.PetId || pet.petId, // Add PascalCase variant
       customerId: pet.customerId || pet.CustomerId || pet.userId || pet.UserId,
+      CustomerId: pet.CustomerId || pet.customerId || pet.userId || pet.UserId,
       customerName: pet.customerName || pet.CustomerName || pet.ownerName || pet.OwnerName,
+      CustomerName: pet.CustomerName || pet.customerName || pet.ownerName || pet.OwnerName,
       name: pet.name || pet.Name || '',
+      Name: pet.Name || pet.name || '',
       species: pet.species || pet.Species || null,
+      Species: pet.Species || pet.species || null,
       breed: pet.breed || pet.Breed || null,
-      gender: pet.gender || pet.Gender || null,
+      Breed: pet.Breed || pet.breed || null,
+      gender: pet.gender !== undefined ? pet.gender : (pet.Gender !== undefined ? pet.Gender : null),
+      Gender: pet.Gender !== undefined ? pet.Gender : (pet.gender !== undefined ? pet.gender : null),
       birthDate: pet.birthDate || pet.BirthDate || null,
+      BirthDate: pet.BirthDate || pet.birthDate || null,
+      age: pet.age || pet.Age || null,
+      Age: pet.Age || pet.age || null,
       color: pet.color || pet.Color || null,
+      Color: pet.Color || pet.color || null,
       imageUrl: pet.imageUrl || pet.ImageUrl || null,
+      ImageUrl: pet.ImageUrl || pet.imageUrl || null,
       notes: pet.notes || pet.Notes || null,
+      Notes: pet.Notes || pet.notes || null,
       createdAt: pet.createdAt || pet.CreatedAt || null,
-      updatedAt: pet.updatedAt || pet.UpdatedAt || null
+      CreatedAt: pet.CreatedAt || pet.createdAt || null,
+      updatedAt: pet.updatedAt || pet.UpdatedAt || null,
+      UpdatedAt: pet.UpdatedAt || pet.updatedAt || null,
+      vaccinatedVaccines: pet.vaccinatedVaccines || pet.VaccinatedVaccines || null,
+      VaccinatedVaccines: pet.VaccinatedVaccines || pet.vaccinatedVaccines || null
     };
   }
 

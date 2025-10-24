@@ -1,14 +1,65 @@
 import apiService from './apiService';
 
 class UserService {
+  // Normalize user data to ensure consistent field names
+  normalizeUserData(user) {
+    return {
+      // User ID fields
+      userId: user.userId || user.UserId,
+      UserId: user.UserId || user.userId,
+      
+      // Customer ID fields (multiple variants for compatibility)
+      customerId: user.customerId || user.CustomerId || user.customerID,
+      CustomerId: user.CustomerId || user.customerId || user.customerID,
+      customerID: user.customerID || user.customerId || user.CustomerId,
+      
+      // Name fields
+      customerName: user.customerName || user.CustomerName || user.fullName || user.username,
+      CustomerName: user.CustomerName || user.customerName || user.fullName || user.username,
+      fullName: user.fullName || user.customerName || user.CustomerName || user.username,
+      
+      // Contact fields
+      username: user.username || user.Username,
+      Username: user.Username || user.username,
+      email: user.email || user.Email,
+      Email: user.Email || user.email,
+      phoneNumber: user.phoneNumber || user.PhoneNumber,
+      PhoneNumber: user.PhoneNumber || user.phoneNumber,
+      
+      // Other fields
+      address: user.address || user.Address || '',
+      Address: user.Address || user.address || '',
+      gender: user.gender !== undefined ? user.gender : (user.Gender !== undefined ? user.Gender : 0),
+      Gender: user.Gender !== undefined ? user.Gender : (user.gender !== undefined ? user.gender : 0),
+      role: user.role !== undefined ? user.role : (user.Role !== undefined ? user.Role : 0),
+      Role: user.Role !== undefined ? user.Role : (user.role !== undefined ? user.role : 0),
+      
+      // Counts
+      petCount: user.petCount || user.PetCount || 0,
+      PetCount: user.PetCount || user.petCount || 0,
+      appointmentCount: user.appointmentCount || user.AppointmentCount || 0,
+      AppointmentCount: user.AppointmentCount || user.appointmentCount || 0,
+      
+      // Timestamps
+      createdAt: user.createdAt || user.CreatedAt,
+      CreatedAt: user.CreatedAt || user.createdAt
+    };
+  }
+
   // Get all users (admin only)
   async getAllUsers(page = 1, limit = 1000) {
     try {
       console.log('Calling API: Pet/admin/customers with params:', { page, limit });
       const response = await apiService.search('Pet/admin/customers', { page, limit });
       console.log('API Response:', response);
+      
+      // Normalize all customer data
+      const normalizedCustomers = Array.isArray(response?.customers) 
+        ? response.customers.map(customer => this.normalizeUserData(customer))
+        : [];
+      
       return {
-        customers: Array.isArray(response?.customers) ? response.customers : [],
+        customers: normalizedCustomers,
         pagination: response?.pagination || {
           page: 1,
           limit: 1000,
@@ -113,8 +164,14 @@ class UserService {
         search: searchTerm 
       });
       console.log('UserService: API response:', response);
+      
+      // Normalize all customer data
+      const normalizedCustomers = Array.isArray(response?.customers) 
+        ? response.customers.map(customer => this.normalizeUserData(customer))
+        : [];
+      
       return {
-        customers: Array.isArray(response?.customers) ? response.customers : [],
+        customers: normalizedCustomers,
         pagination: response?.pagination || {
           page: 1,
           limit: 1000,

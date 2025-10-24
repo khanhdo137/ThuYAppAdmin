@@ -1,8 +1,9 @@
 import { Box, MenuItem, TextField } from '@mui/material';
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { ConfirmDialog, MedicalHistoryDialog } from '../';
 import { appointmentService } from '../../services';
 import medicalHistoryService from '../../services/medicalHistoryService';
+import serviceService from '../../services/serviceService';
 import { useToast } from '../ToastProvider';
 import {
   APPOINTMENT_STATUS_FILTER_LABELS
@@ -26,7 +27,24 @@ const StatusSelector = ({ appointmentId, currentStatus, onStatusUpdate, appointm
   const [isUpdating, setIsUpdating] = useState(false);
   const [isSavingMedicalHistory, setIsSavingMedicalHistory] = useState(false);
   const [isLoadingMedicalHistory, setIsLoadingMedicalHistory] = useState(false);
+  const [services, setServices] = useState([]);
   const lastUpdateRef = useRef(null);
+
+  // Load danh sách dịch vụ khi component mount
+  useEffect(() => {
+    const loadServices = async () => {
+      try {
+        const response = await serviceService.getAllServices();
+        // Response có thể là array trực tiếp hoặc object với property services
+        const servicesList = Array.isArray(response) ? response : (response?.services || []);
+        setServices(servicesList);
+      } catch (error) {
+        console.error('Error loading services:', error);
+        setServices([]);
+      }
+    };
+    loadServices();
+  }, []);
 
   // Tải hồ sơ bệnh án hiện có của appointment
   const loadExistingMedicalHistory = async (petId, appointmentDate) => {
@@ -130,6 +148,9 @@ const StatusSelector = ({ appointmentId, currentStatus, onStatusUpdate, appointm
       if (confirmDialog.newStatus === 2) {
         // Đóng confirm dialog và mở medical history dialog
         setConfirmDialog(prev => ({ ...prev, open: false }));
+        console.log('Setting medical history dialog with appointmentData:', appointmentData);
+        console.log('DoctorId in appointmentData:', appointmentData.DoctorId || appointmentData.doctorId);
+        
         setMedicalHistoryDialog({
           open: true,
           appointmentData: appointmentData,
@@ -205,6 +226,9 @@ const StatusSelector = ({ appointmentId, currentStatus, onStatusUpdate, appointm
     setIsSavingMedicalHistory(true);
     
     try {
+      console.log('handleSaveMedicalHistory - medicalHistoryData:', medicalHistoryData);
+      console.log('handleSaveMedicalHistory - appointmentData:', medicalHistoryDialog.appointmentData);
+      
       const isEdit = medicalHistoryDialog.isEdit && medicalHistoryDialog.existingMedicalHistory;
       
       if (isEdit) {
@@ -213,10 +237,15 @@ const StatusSelector = ({ appointmentId, currentStatus, onStatusUpdate, appointm
           medicalHistoryDialog.existingMedicalHistory.HistoryId || medicalHistoryDialog.existingMedicalHistory.historyId,
           {
             petId: medicalHistoryData.petId,
+            doctorId: medicalHistoryData.doctorId || null,
+            appointmentId: medicalHistoryData.appointmentId || null,
             recordDate: medicalHistoryData.recordDate.toISOString(),
             description: medicalHistoryData.description,
             treatment: medicalHistoryData.treatment,
-            notes: medicalHistoryData.notes
+            notes: medicalHistoryData.notes,
+            nextAppointmentDate: medicalHistoryData.nextAppointmentDate ? medicalHistoryData.nextAppointmentDate.toISOString() : null,
+            nextServiceId: medicalHistoryData.nextServiceId || null,
+            reminderNote: medicalHistoryData.reminderNote || null
           }
         );
         
@@ -228,10 +257,15 @@ const StatusSelector = ({ appointmentId, currentStatus, onStatusUpdate, appointm
         // Tạo hồ sơ bệnh án mới
         await medicalHistoryService.createMedicalHistory({
           petId: medicalHistoryData.petId,
+          doctorId: medicalHistoryData.doctorId || null,
+          appointmentId: medicalHistoryData.appointmentId || null,
           recordDate: medicalHistoryData.recordDate.toISOString(),
           description: medicalHistoryData.description,
           treatment: medicalHistoryData.treatment,
-          notes: medicalHistoryData.notes
+          notes: medicalHistoryData.notes,
+          nextAppointmentDate: medicalHistoryData.nextAppointmentDate ? medicalHistoryData.nextAppointmentDate.toISOString() : null,
+          nextServiceId: medicalHistoryData.nextServiceId || null,
+          reminderNote: medicalHistoryData.reminderNote || null
         });
 
         // Sau khi tạo thành công hồ sơ bệnh án, mới cập nhật status appointment
@@ -335,6 +369,7 @@ const StatusSelector = ({ appointmentId, currentStatus, onStatusUpdate, appointm
         existingMedicalHistory={medicalHistoryDialog.existingMedicalHistory}
         isEdit={medicalHistoryDialog.isEdit}
         loading={isSavingMedicalHistory}
+        services={services}
       />
     </>
   );

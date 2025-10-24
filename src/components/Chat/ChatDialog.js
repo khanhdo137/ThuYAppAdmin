@@ -22,7 +22,8 @@ import {
   AdminPanelSettings as AdminIcon,
   KeyboardArrowDown as ScrollDownIcon,
   PhotoCamera as CameraIcon,
-  Image as ImageIcon
+  Image as ImageIcon,
+  Videocam as VideocamIcon
 } from '@mui/icons-material';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
@@ -44,6 +45,9 @@ const ChatDialog = ({ open, onClose, chatRoom, onMessageSent }) => {
   const [uploadingImage, setUploadingImage] = useState(false);
   const [selectedImage, setSelectedImage] = useState(null);
   const [showImageUpload, setShowImageUpload] = useState(false);
+  const [uploadingVideo, setUploadingVideo] = useState(false);
+  const [selectedVideo, setSelectedVideo] = useState(null);
+  const [showVideoUpload, setShowVideoUpload] = useState(false);
   const toast = useToast();
 
   useEffect(() => {
@@ -306,6 +310,62 @@ const ChatDialog = ({ open, onClose, chatRoom, onMessageSent }) => {
     }
   };
 
+  const handleVideoUpload = async (file) => {
+    setUploadingVideo(true);
+    try {
+      console.log('=== VIDEO UPLOAD DEBUG ===');
+      console.log('File:', file.name, file.type, file.size);
+      
+      // Validate video file
+      if (!file.type.startsWith('video/')) {
+        throw new Error('Chỉ chấp nhận file video');
+      }
+      
+      // Check file size (max 100MB)
+      const maxSize = 100 * 1024 * 1024; // 100MB
+      if (file.size > maxSize) {
+        throw new Error('Video không được vượt quá 100MB');
+      }
+      
+      // Tạo FormData
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('upload_preset', 'ThuYHuongNo');
+      formData.append('resource_type', 'video'); // Chỉ định là video
+      
+      console.log('Uploading video to Cloudinary...');
+      
+      // Upload video lên Cloudinary
+      const cloudinaryUrl = 'https://api.cloudinary.com/v1_1/dl6lq6ord/video/upload';
+      
+      const response = await fetch(cloudinaryUrl, {
+        method: 'POST',
+        body: formData
+      });
+      
+      console.log('Response status:', response.status);
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Upload error response:', errorText);
+        throw new Error(`Upload failed with status ${response.status}`);
+      }
+      
+      const result = await response.json();
+      console.log('Upload success:', result);
+      console.log('Video URL:', result.secure_url);
+      
+      // Lưu URL video
+      setSelectedVideo(result.secure_url);
+      setUploadingVideo(false);
+      toast.showSuccess('Video đã được tải lên thành công');
+    } catch (error) {
+      console.error('Error uploading video:', error);
+      toast.showError(`Không thể tải lên video: ${error.message}`);
+      setUploadingVideo(false);
+    }
+  };
+
   const handleSendImage = async () => {
     if (!selectedImage || !chatRoom) return;
     
@@ -363,6 +423,68 @@ const ChatDialog = ({ open, onClose, chatRoom, onMessageSent }) => {
       // Remove optimistic message on error
       setMessages(prev => prev.filter(msg => !msg.isOptimistic));
       toast.showError('Không thể gửi hình ảnh');
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const handleSendVideo = async () => {
+    if (!selectedVideo || !chatRoom) return;
+    
+    try {
+      setSending(true);
+      
+      // Optimistic update - add video message to UI immediately
+      const optimisticMessage = {
+        messageId: `temp_vid_${Date.now()}`,
+        messageContent: '[Video]',
+        messageType: 3,
+        fileUrl: selectedVideo,
+        senderType: 1, // Admin
+        senderName: 'Admin',
+        createdAt: new Date().toISOString(),
+        isOptimistic: true
+      };
+      
+      setMessages(prev => [...prev, optimisticMessage]);
+      
+      // Smooth scroll to bottom after adding message
+      setTimeout(() => {
+        forceScrollToBottom();
+      }, 50);
+      
+      // Send to server
+      await chatService.sendAdminMessage(chatRoom.roomId, '[Video]', 3, selectedVideo);
+      
+      // Replace optimistic message with real message
+      const realMessage = {
+        messageId: `real_vid_${Date.now()}`,
+        messageContent: '[Video]',
+        messageType: 3,
+        fileUrl: selectedVideo,
+        senderType: 1,
+        senderName: 'Admin',
+        createdAt: new Date().toISOString(),
+        isOptimistic: false
+      };
+      
+      setMessages(prev => prev.map(msg => 
+        msg.isOptimistic ? realMessage : msg
+      ));
+      
+      // Notify parent component for optimistic update
+      onMessageSent?.(chatRoom.roomId, '[Video]');
+      
+      // Clear selected video and hide upload section
+      setSelectedVideo(null);
+      setShowVideoUpload(false);
+      toast.showSuccess('Đã gửi video thành công');
+      
+    } catch (error) {
+      console.error('Error sending video:', error);
+      // Remove optimistic message on error
+      setMessages(prev => prev.filter(msg => !msg.isOptimistic));
+      toast.showError('Không thể gửi video');
     } finally {
       setSending(false);
     }
@@ -519,6 +641,24 @@ const ChatDialog = ({ open, onClose, chatRoom, onMessageSent }) => {
                               {message.messageContent}
                             </Typography>
                           </Box>
+                        ) : message.messageType === 3 && message.fileUrl ? (
+                          <Box>
+                            <Box
+                              component="video"
+                              src={message.fileUrl}
+                              controls
+                              sx={{
+                                maxWidth: 300,
+                                maxHeight: 300,
+                                borderRadius: 1,
+                                mb: 1,
+                                backgroundColor: '#000'
+                              }}
+                            />
+                            <Typography variant="body2">
+                              {message.messageContent}
+                            </Typography>
+                          </Box>
                         ) : (
                           <Typography variant="body2">
                             {message.messageContent}
@@ -604,6 +744,75 @@ const ChatDialog = ({ open, onClose, chatRoom, onMessageSent }) => {
           </Box>
         )}
 
+        {/* Video Upload Section */}
+        {showVideoUpload && (
+          <Box sx={{ mb: 2, p: 2, border: 1, borderColor: 'divider', borderRadius: 1 }}>
+            <Typography variant="subtitle2" gutterBottom>
+              Gửi video:
+            </Typography>
+            <input
+              type="file"
+              accept="video/*"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) {
+                  handleVideoUpload(file);
+                }
+              }}
+              style={{ display: 'none' }}
+              id="video-upload-input"
+            />
+            <label htmlFor="video-upload-input">
+              <Button
+                variant="outlined"
+                component="span"
+                disabled={uploadingVideo}
+                startIcon={uploadingVideo ? <CircularProgress size={20} /> : <VideocamIcon />}
+                fullWidth
+              >
+                {uploadingVideo ? 'Đang tải lên...' : 'Chọn video'}
+              </Button>
+            </label>
+            {selectedVideo && (
+              <Box sx={{ mt: 2 }}>
+                <Box
+                  component="video"
+                  src={selectedVideo}
+                  controls
+                  sx={{
+                    width: '100%',
+                    maxHeight: 200,
+                    borderRadius: 1,
+                    backgroundColor: '#000',
+                    mb: 1
+                  }}
+                />
+                <Box sx={{ display: 'flex', gap: 1 }}>
+                  <Button
+                    variant="contained"
+                    onClick={handleSendVideo}
+                    disabled={sending}
+                    startIcon={sending ? <CircularProgress size={20} /> : <SendIcon />}
+                    size="small"
+                  >
+                    {sending ? 'Đang gửi...' : 'Gửi video'}
+                  </Button>
+                  <Button
+                    variant="outlined"
+                    onClick={() => {
+                      setSelectedVideo(null);
+                      setShowVideoUpload(false);
+                    }}
+                    size="small"
+                  >
+                    Hủy
+                  </Button>
+                </Box>
+              </Box>
+            )}
+          </Box>
+        )}
+
         {/* Text Message Input */}
         <Box sx={{ display: 'flex', alignItems: 'flex-end', gap: 1 }}>
           <IconButton
@@ -612,6 +821,14 @@ const ChatDialog = ({ open, onClose, chatRoom, onMessageSent }) => {
             disabled={sending}
           >
             <CameraIcon />
+          </IconButton>
+          
+          <IconButton
+            onClick={() => setShowVideoUpload(!showVideoUpload)}
+            color="secondary"
+            disabled={sending}
+          >
+            <VideocamIcon />
           </IconButton>
           
           <TextField

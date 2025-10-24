@@ -3,7 +3,7 @@ import apiService from './apiService';
 class AppointmentService {
   // Get API URL helper
   getApiUrl() {
-    return process.env.REACT_APP_API_BASE_URL || 'http://192.168.1.27:5074/api';
+    return process.env.REACT_APP_API_BASE_URL || 'http://192.168.1.35:5074/api';
   }
 
   // Get all appointments (for admin)
@@ -22,10 +22,17 @@ class AppointmentService {
         params.append('date', date);
       }
 
-      const response = await apiService.fetchWithFallback(`${this.getApiUrl()}/Appointment/admin?${params}`, {
+      const url = `${this.getApiUrl()}/Appointment/admin?${params}`;
+      console.log('🔍 Fetching appointments from:', url);
+      console.log('🔍 Headers:', apiService.getHeaders());
+
+      const response = await apiService.fetchWithFallback(url, {
         method: 'GET',
         headers: apiService.getHeaders(),
       });
+      
+      console.log('🔍 Response status:', response.status);
+      console.log('🔍 Response headers:', response.headers);
       
       const result = await apiService.handleResponse(response);
       console.log('getAllAppointments result:', result);
@@ -34,7 +41,13 @@ class AppointmentService {
       // Return the full result object with both appointments and pagination
       return result || { appointments: [], pagination: { page: 1, limit: 15, total: 0, totalPages: 0 } };
     } catch (error) {
-      console.error('Error getting all appointments:', error);
+      console.error('❌ Error getting all appointments:', error);
+      console.error('❌ Error details:', {
+        message: error.message,
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data
+      });
       throw error;
     }
   }

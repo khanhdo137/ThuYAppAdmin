@@ -77,6 +77,8 @@ export const getAppointmentTableColumns = ({
       const appointmentData = {
         AppointmentId: row.AppointmentId || row.appointmentId,
         PetId: row.PetId || row.petId,
+        DoctorId: row.DoctorId || row.doctorId, // Thêm DoctorId
+        ServiceId: row.ServiceId || row.serviceId, // Thêm ServiceId
         PetName: row.PetName || row.petName || getPetName(row.PetId || row.petId, pets),
         CustomerName: row.CustomerName || row.customerName || getCustomerName(row.PetId || row.petId, pets, customers),
         DoctorName: row.DoctorName || row.doctorName || getDoctorName(row.DoctorId || row.doctorId, doctors),

@@ -29,6 +29,10 @@ const CustomerDetailTabs = ({
   // The pets and appointments are already filtered by customer from the parent component
   const customerPets = pets;
   const customerAppointments = appointments;
+  
+  // Use actual fetched data counts if available, otherwise use customer counts
+  const actualPetCount = customerPets.length;
+  const actualAppointmentCount = customerAppointments.length;
 
   const joinDate = selectedCustomer.createdAt ? 
     new Date(selectedCustomer.createdAt).toLocaleDateString('vi-VN') : 'Chưa có';
@@ -37,8 +41,8 @@ const CustomerDetailTabs = ({
     <Box sx={{ width: '100%' }}>
       <Tabs value={selectedTab} onChange={(e, newValue) => onTabChange(newValue)}>
         <Tab label="Thông tin cơ bản" />
-        <Tab label={`Thú cưng (${selectedCustomer.petCount || 0})`} />
-        <Tab label={`Lịch hẹn (${selectedCustomer.appointmentCount || 0})`} />
+        <Tab label={`Thú cưng (${actualPetCount})`} />
+        <Tab label={`Lịch hẹn (${actualAppointmentCount})`} />
       </Tabs>
 
       {/* Tab 0: Basic Info */}
@@ -95,14 +99,14 @@ const CustomerDetailTabs = ({
             
             <Box textAlign="center">
               <Typography variant="h4" color="primary">
-                {selectedCustomer.petCount || 0}
+                {loadingCustomerDetails ? '...' : actualPetCount}
               </Typography>
               <Typography variant="caption">Thú cưng</Typography>
             </Box>
             
             <Box textAlign="center">
               <Typography variant="h4" color="secondary">
-                {selectedCustomer.appointmentCount || 0}
+                {loadingCustomerDetails ? '...' : actualAppointmentCount}
               </Typography>
               <Typography variant="caption">Lịch hẹn</Typography>
             </Box>
@@ -143,16 +147,6 @@ const CustomerDetailTabs = ({
                         </Typography>
                       )}
                     </Box>
-                    
-                    <Chip 
-                      label={
-                        pet.gender === 0 ? 'Đực' : 
-                        pet.gender === 1 ? 'Cái' : 
-                        'Không xác định'
-                      } 
-                      size="small" 
-                      color={pet.gender === 0 ? 'primary' : pet.gender === 1 ? 'secondary' : 'default'}
-                    />
                   </Box>
                 </Paper>
               ))}

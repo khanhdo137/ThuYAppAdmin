@@ -98,22 +98,25 @@ const dashboardService = {
     switch (type) {
       case 'completion-stats':
         return {
-          labels: ['Hoàn thành', 'Đã hủy', 'Khác'],
+          labels: ['Hoàn thành', 'Đã hủy', 'Chờ xác nhận', 'Đã xác nhận'],
           datasets: [{
             data: [
               data.completedAppointments || 0,
               data.cancelledAppointments || 0,
-              (data.totalAppointments || 0) - (data.completedAppointments || 0) - (data.cancelledAppointments || 0)
+              data.pendingAppointments || 0,
+              data.confirmedAppointments || 0
             ],
             backgroundColor: [
-              'rgba(75, 192, 192, 0.8)',
-              'rgba(255, 99, 132, 0.8)',
-              'rgba(255, 205, 86, 0.8)'
+              'rgba(75, 192, 192, 0.8)',    // Xanh lá - Hoàn thành
+              'rgba(255, 99, 132, 0.8)',    // Đỏ - Đã hủy
+              'rgba(255, 159, 64, 0.8)',    // Cam - Chờ xác nhận
+              'rgba(54, 162, 235, 0.8)'     // Xanh dương - Đã xác nhận
             ],
             borderColor: [
               'rgba(75, 192, 192, 1)',
               'rgba(255, 99, 132, 1)',
-              'rgba(255, 205, 86, 1)'
+              'rgba(255, 159, 64, 1)',
+              'rgba(54, 162, 235, 1)'
             ],
             borderWidth: 1
           }]
@@ -333,6 +336,10 @@ const dashboardService = {
     return await dashboardService.getFlexibleDashboard('last-7-days');
   },
 
+  getLast30DaysData: async () => {
+    return await dashboardService.getFlexibleDashboard('last-30-days');
+  },
+
   getThisWeekData: async () => {
     return await dashboardService.getFlexibleDashboard('this-week');
   },
@@ -351,11 +358,390 @@ const dashboardService = {
       'today': 'Hôm nay',
       'specific-date': 'Ngày cụ thể',
       'last-7-days': '7 ngày gần nhất',
+      'last-30-days': '30 ngày gần nhất',
       'this-week': 'Tuần này',
       'last-week': 'Tuần trước',
       'specific-month': 'Tháng cụ thể'
     };
     return labels[filterType] || 'Hôm nay';
+  },
+
+  // Format currency for Vietnamese Dong
+  formatCurrency: (amount) => {
+    if (amount === 0) return '0 VNĐ';
+    return new Intl.NumberFormat('vi-VN', {
+      style: 'currency',
+      currency: 'VND',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0
+    }).format(amount);
+  },
+
+  // === SERVICE STATISTICS ===
+  
+  // Get service statistics with flexible filter
+  getServiceStats: async (filterType = 'today', params = {}) => {
+    try {
+      const queryParams = { filterType, ...params };
+      const response = await apiService.getWithParams('Dashboard/service-stats', queryParams);
+      return response;
+    } catch (error) {
+      console.error('Error getting service statistics:', error);
+      throw error;
+    }
+  },
+
+  // Format service chart data
+  formatServiceChartData: (data, type = 'popularity') => {
+    if (!data || !data.topServices || data.topServices.length === 0) {
+      return {
+        labels: [],
+        datasets: []
+      };
+    }
+
+    switch (type) {
+      case 'popularity':
+        return {
+          labels: data.topServices.map(s => s.serviceName || 'Unknown'),
+          datasets: [{
+            label: 'Số lượng lịch hẹn',
+            data: data.topServices.map(s => s.totalAppointments || 0),
+            backgroundColor: [
+              'rgba(255, 99, 132, 0.8)',
+              'rgba(54, 162, 235, 0.8)',
+              'rgba(255, 205, 86, 0.8)',
+              'rgba(75, 192, 192, 0.8)',
+              'rgba(153, 102, 255, 0.8)',
+              'rgba(255, 159, 64, 0.8)',
+              'rgba(199, 199, 199, 0.8)',
+              'rgba(83, 102, 255, 0.8)',
+              'rgba(255, 99, 255, 0.8)',
+              'rgba(99, 255, 132, 0.8)'
+            ],
+            borderWidth: 1
+          }]
+        };
+
+      case 'revenue':
+        return {
+          labels: data.revenueByService.map(s => s.serviceName || 'Unknown'),
+          datasets: [{
+            label: 'Doanh thu (VNĐ)',
+            data: data.revenueByService.map(s => s.revenue || 0),
+            backgroundColor: [
+              'rgba(75, 192, 192, 0.8)',
+              'rgba(54, 162, 235, 0.8)',
+              'rgba(153, 102, 255, 0.8)',
+              'rgba(255, 159, 64, 0.8)',
+              'rgba(255, 99, 132, 0.8)',
+              'rgba(255, 205, 86, 0.8)',
+              'rgba(199, 199, 199, 0.8)',
+              'rgba(83, 102, 255, 0.8)',
+              'rgba(255, 99, 255, 0.8)',
+              'rgba(99, 255, 132, 0.8)'
+            ],
+            borderWidth: 1
+          }]
+        };
+
+      case 'completion':
+        return {
+          labels: data.topServices.map(s => s.serviceName || 'Unknown'),
+          datasets: [{
+            label: 'Tỷ lệ hoàn thành (%)',
+            data: data.topServices.map(s => s.completionRate || 0),
+            backgroundColor: 'rgba(75, 192, 192, 0.8)',
+            borderColor: 'rgba(75, 192, 192, 1)',
+            borderWidth: 1
+          }]
+        };
+
+      default:
+        return {
+          labels: [],
+          datasets: []
+        };
+    }
+  },
+
+  // === CUSTOMER STATISTICS ===
+  
+  // Get customer statistics with flexible filter
+  getCustomerStats: async (filterType = 'today', params = {}) => {
+    try {
+      const queryParams = { filterType, ...params };
+      const response = await apiService.getWithParams('Dashboard/customer-stats', queryParams);
+      return response;
+    } catch (error) {
+      console.error('Error getting customer statistics:', error);
+      throw error;
+    }
+  },
+
+  // Format customer chart data
+  formatCustomerChartData: (data, type = 'activity') => {
+    if (!data) {
+      return {
+        labels: [],
+        datasets: []
+      };
+    }
+
+    switch (type) {
+      case 'activity':
+        if (!data.customersByActivity || data.customersByActivity.length === 0) {
+          return { labels: [], datasets: [] };
+        }
+        return {
+          labels: data.customersByActivity.map(a => a.activityLevel || 'Unknown'),
+          datasets: [{
+            label: 'Số lượng khách hàng',
+            data: data.customersByActivity.map(a => a.customerCount || 0),
+            backgroundColor: [
+              'rgba(75, 192, 192, 0.8)',   // Cao - xanh lá
+              'rgba(255, 205, 86, 0.8)',   // Trung bình - vàng
+              'rgba(255, 99, 132, 0.8)'    // Thấp - đỏ
+            ],
+            borderColor: [
+              'rgba(75, 192, 192, 1)',
+              'rgba(255, 205, 86, 1)',
+              'rgba(255, 99, 132, 1)'
+            ],
+            borderWidth: 1
+          }]
+        };
+
+      case 'growth':
+        return {
+          labels: ['Khách hàng mới', 'Khách hàng quay lại'],
+          datasets: [{
+            data: [
+              data.newCustomers || 0,
+              data.returningCustomers || 0
+            ],
+            backgroundColor: [
+              'rgba(54, 162, 235, 0.8)',
+              'rgba(255, 159, 64, 0.8)'
+            ],
+            borderColor: [
+              'rgba(54, 162, 235, 1)',
+              'rgba(255, 159, 64, 1)'
+            ],
+            borderWidth: 1
+          }]
+        };
+
+      case 'top-customers':
+        if (!data.topCustomers || data.topCustomers.length === 0) {
+          return { labels: [], datasets: [] };
+        }
+        return {
+          labels: data.topCustomers.map(c => c.customerName || 'Unknown'),
+          datasets: [{
+            label: 'Tổng chi tiêu (VNĐ)',
+            data: data.topCustomers.map(c => c.totalSpent || 0),
+            backgroundColor: 'rgba(153, 102, 255, 0.8)',
+            borderColor: 'rgba(153, 102, 255, 1)',
+            borderWidth: 1
+          }]
+        };
+
+      default:
+        return {
+          labels: [],
+          datasets: []
+        };
+    }
+  },
+
+  // Get service chart options
+  getServiceChartOptions: (type = 'popularity') => {
+    const baseOptions = {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          position: 'top',
+        },
+        title: {
+          display: false
+        }
+      }
+    };
+
+    switch (type) {
+      case 'popularity':
+        return {
+          ...baseOptions,
+          plugins: {
+            ...baseOptions.plugins,
+            legend: {
+              position: 'right'
+            }
+          }
+        };
+
+      case 'revenue':
+        return {
+          ...baseOptions,
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: {
+                callback: function(value) {
+                  return dashboardService.formatCurrency(value);
+                }
+              }
+            }
+          }
+        };
+
+      case 'completion':
+        return {
+          ...baseOptions,
+          scales: {
+            y: {
+              beginAtZero: true,
+              max: 100,
+              ticks: {
+                callback: function(value) {
+                  return value + '%';
+                }
+              }
+            }
+          }
+        };
+
+      default:
+        return baseOptions;
+    }
+  },
+
+  // Get customer chart options
+  getCustomerChartOptions: (type = 'activity') => {
+    const baseOptions = {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          position: 'top',
+        },
+        title: {
+          display: false
+        }
+      }
+    };
+
+    switch (type) {
+      case 'activity':
+      case 'growth':
+        return {
+          ...baseOptions,
+          plugins: {
+            ...baseOptions.plugins,
+            legend: {
+              position: 'right'
+            }
+          }
+        };
+
+      case 'top-customers':
+        return {
+          ...baseOptions,
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: {
+                callback: function(value) {
+                  return dashboardService.formatCurrency(value);
+                }
+              }
+            }
+          }
+        };
+
+      default:
+        return baseOptions;
+    }
+  },
+
+  // === MONTHLY REVENUE CHART ===
+  getMonthlyRevenue: async (year) => {
+    try {
+      const response = await apiService.getWithParams('Dashboard/monthly-revenue', { year });
+      return response;
+    } catch (error) {
+      console.error('Error getting monthly revenue:', error);
+      throw error;
+    }
+  },
+
+  formatMonthlyRevenueChartData: (data) => {
+    if (!data || !data.monthlyData || data.monthlyData.length === 0) {
+      return {
+        labels: [],
+        datasets: []
+      };
+    }
+
+    return {
+      labels: data.monthlyData.map(m => m.monthName),
+      datasets: [{
+        label: `Doanh thu năm ${data.year}`,
+        data: data.monthlyData.map(m => m.revenue),
+        backgroundColor: data.monthlyData.map(m => 
+          m.growthPercentage >= 0 ? 'rgba(76, 175, 80, 0.6)' : 'rgba(244, 67, 54, 0.6)'
+        ),
+        borderColor: data.monthlyData.map(m => 
+          m.growthPercentage >= 0 ? 'rgba(76, 175, 80, 1)' : 'rgba(244, 67, 54, 1)'
+        ),
+        borderWidth: 2
+      }]
+    };
+  },
+
+  getMonthlyRevenueChartOptions: (data) => {
+    return {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          display: true,
+          position: 'top'
+        },
+        title: {
+          display: true,
+          text: `Tổng doanh thu: ${dashboardService.formatCurrency(data?.totalRevenue || 0)} | Trung bình: ${dashboardService.formatCurrency(data?.averageMonthlyRevenue || 0)}/tháng`,
+          font: {
+            size: 14,
+            weight: 'bold'
+          }
+        },
+        tooltip: {
+          callbacks: {
+            label: function(context) {
+              const monthIndex = context.dataIndex;
+              const monthData = data.monthlyData[monthIndex];
+              return [
+                `Doanh thu: ${dashboardService.formatCurrency(monthData.revenue)}`,
+                `Tăng trưởng: ${dashboardService.formatNumber(monthData.growthPercentage)}% (so với cùng kỳ năm trước)`
+              ];
+            }
+          }
+        }
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          ticks: {
+            callback: function(value) {
+              return dashboardService.formatCurrency(value);
+            }
+          }
+        }
+      }
+    };
   }
 };
 

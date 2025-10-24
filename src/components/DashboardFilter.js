@@ -58,6 +58,7 @@ const DashboardFilter = ({
               <MenuItem value="today">Hôm nay</MenuItem>
               <MenuItem value="specific-date">Ngày cụ thể</MenuItem>
               <MenuItem value="last-7-days">7 ngày gần nhất</MenuItem>
+              <MenuItem value="last-30-days">30 ngày gần nhất</MenuItem>
               <MenuItem value="this-week">Tuần này</MenuItem>
               <MenuItem value="last-week">Tuần trước</MenuItem>
               <MenuItem value="specific-month">Tháng cụ thể</MenuItem>
