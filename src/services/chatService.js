@@ -26,14 +26,8 @@ export const chatService = {
       });
       console.log('ChatService: API response:', response);
       
-      // Format thời gian cho tất cả rooms
-      if (response.rooms) {
-        response.rooms = response.rooms.map(room => ({
-          ...room,
-          createdAt: formatVietnamTime(room.createdAt),
-          lastMessageAt: formatChatRoomTime(room.lastMessageAt || room.createdAt)
-        }));
-      }
+      // Keep timestamps as-is for proper date formatting in components
+      // Don't format here, let components handle it
       
       // Cache the response
       chatRoomsCache = response;
@@ -74,10 +68,7 @@ export const chatService = {
           const now = new Date();
           chatRoomsCache.rooms[roomIndex].lastMessage = messageContent.length > 100 ? 
             messageContent.substring(0, 100) + "..." : messageContent;
-          chatRoomsCache.rooms[roomIndex].lastMessageAt = now.toLocaleTimeString('vi-VN', { 
-            hour: '2-digit', 
-            minute: '2-digit' 
-          });
+          chatRoomsCache.rooms[roomIndex].lastMessageAt = now.toISOString(); // Use ISO string
           chatRoomsCache.rooms[roomIndex].unreadCount = 0; // Admin sent message, so no unread
           
           // Move this room to the top of the list (most recent)

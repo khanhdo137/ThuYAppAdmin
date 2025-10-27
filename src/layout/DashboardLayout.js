@@ -50,7 +50,7 @@ const DashboardLayout = () => {
   const location = useLocation();
 
   const menuItems = [
-    { text: 'Dashboard', icon: <Dashboard />, path: '/admin/dashboard' },
+    { text: 'Thống kê', icon: <Dashboard />, path: '/admin/dashboard' },
     { text: 'Lịch khám', icon: <Schedule />, path: '/admin/appointments' },
     { text: 'Chat trực tiếp', icon: <Chat />, path: '/admin/chat' },
     { text: 'Khách hàng', icon: <People />, path: '/admin/customers' },
@@ -301,7 +301,7 @@ const DashboardLayout = () => {
                 fontWeight: 500,
                 color: 'text.primary'
               }}>
-                {menuItems.find(item => item.path === location.pathname)?.text || 'Dashboard'}
+                {menuItems.find(item => item.path === location.pathname)?.text || 'Thống kê'}
               </Typography>
             </Box>
 

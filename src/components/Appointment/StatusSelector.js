@@ -229,24 +229,48 @@ const StatusSelector = ({ appointmentId, currentStatus, onStatusUpdate, appointm
       console.log('handleSaveMedicalHistory - medicalHistoryData:', medicalHistoryData);
       console.log('handleSaveMedicalHistory - appointmentData:', medicalHistoryDialog.appointmentData);
       
+      // ✅ Combine nextAppointmentDate + nextAppointmentTime
+      let combinedNextAppointmentDate = null;
+      if (medicalHistoryData.nextAppointmentDate) {
+        const date = new Date(medicalHistoryData.nextAppointmentDate);
+        
+        // Nếu có time, combine với date
+        if (medicalHistoryData.nextAppointmentTime) {
+          const [hours, minutes] = medicalHistoryData.nextAppointmentTime.split(':');
+          date.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+        } else {
+          // Nếu không có time, set mặc định 09:00
+          date.setHours(9, 0, 0, 0);
+        }
+        
+        combinedNextAppointmentDate = date.toISOString();
+        console.log('📅 Combined next appointment:', {
+          date: medicalHistoryData.nextAppointmentDate,
+          time: medicalHistoryData.nextAppointmentTime,
+          combined: combinedNextAppointmentDate
+        });
+      }
+      
       const isEdit = medicalHistoryDialog.isEdit && medicalHistoryDialog.existingMedicalHistory;
+      
+      const medicalHistoryPayload = {
+        petId: medicalHistoryData.petId,
+        doctorId: medicalHistoryData.doctorId || null,
+        appointmentId: medicalHistoryData.appointmentId || null,
+        recordDate: medicalHistoryData.recordDate.toISOString(),
+        description: medicalHistoryData.description,
+        treatment: medicalHistoryData.treatment,
+        notes: medicalHistoryData.notes,
+        nextAppointmentDate: combinedNextAppointmentDate,
+        nextServiceId: medicalHistoryData.nextServiceId || null,
+        reminderNote: medicalHistoryData.reminderNote || null
+      };
       
       if (isEdit) {
         // Cập nhật hồ sơ bệnh án hiện có
         await medicalHistoryService.updateMedicalHistory(
           medicalHistoryDialog.existingMedicalHistory.HistoryId || medicalHistoryDialog.existingMedicalHistory.historyId,
-          {
-            petId: medicalHistoryData.petId,
-            doctorId: medicalHistoryData.doctorId || null,
-            appointmentId: medicalHistoryData.appointmentId || null,
-            recordDate: medicalHistoryData.recordDate.toISOString(),
-            description: medicalHistoryData.description,
-            treatment: medicalHistoryData.treatment,
-            notes: medicalHistoryData.notes,
-            nextAppointmentDate: medicalHistoryData.nextAppointmentDate ? medicalHistoryData.nextAppointmentDate.toISOString() : null,
-            nextServiceId: medicalHistoryData.nextServiceId || null,
-            reminderNote: medicalHistoryData.reminderNote || null
-          }
+          medicalHistoryPayload
         );
         
         // Cập nhật status appointment sau khi cập nhật hồ sơ bệnh án
@@ -255,23 +279,38 @@ const StatusSelector = ({ appointmentId, currentStatus, onStatusUpdate, appointm
         showSuccess('Đã cập nhật hồ sơ bệnh án và trạng thái thành công!');
       } else {
         // Tạo hồ sơ bệnh án mới
-        await medicalHistoryService.createMedicalHistory({
-          petId: medicalHistoryData.petId,
-          doctorId: medicalHistoryData.doctorId || null,
-          appointmentId: medicalHistoryData.appointmentId || null,
-          recordDate: medicalHistoryData.recordDate.toISOString(),
-          description: medicalHistoryData.description,
-          treatment: medicalHistoryData.treatment,
-          notes: medicalHistoryData.notes,
-          nextAppointmentDate: medicalHistoryData.nextAppointmentDate ? medicalHistoryData.nextAppointmentDate.toISOString() : null,
-          nextServiceId: medicalHistoryData.nextServiceId || null,
-          reminderNote: medicalHistoryData.reminderNote || null
-        });
+        await medicalHistoryService.createMedicalHistory(medicalHistoryPayload);
 
         // Sau khi tạo thành công hồ sơ bệnh án, mới cập nhật status appointment
         await onStatusUpdate(appointmentId, 2); // Status = 2 (Hoàn thành)
         
         showSuccess('Đã hoàn thành lịch hẹn và tạo hồ sơ bệnh án thành công!');
+      }
+      
+      // ✅ Gọi API check reminders sau khi lưu thành công
+      if (combinedNextAppointmentDate) {
+        try {
+          // Get user_id from pet's customer
+          const petResponse = await fetch(`http://192.168.1.33:5074/api/Pet/${medicalHistoryData.petId}`, {
+            headers: {
+              'Authorization': `Bearer ${localStorage.getItem('token')}`
+            }
+          });
+          
+          if (petResponse.ok) {
+            const petData = await petResponse.json();
+            const userId = petData.customer?.userId || petData.Customer?.UserId;
+            
+            if (userId) {
+              // Trigger reminder check bằng cách gọi API với user's token
+              // Hoặc dùng một cách khác: gọi check-my-reminders từ mobile app
+              console.log('✅ Medical history created with next appointment. User should check reminders on app.');
+              console.log('📋 User ID:', userId, '- Next appointment:', combinedNextAppointmentDate);
+            }
+          }
+        } catch (reminderError) {
+          console.warn('⚠️ Failed to get user info for reminder:', reminderError);
+        }
       }
       
       // Đóng dialog

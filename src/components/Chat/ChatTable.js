@@ -28,7 +28,7 @@ import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import chatService from '../../services/chatService';
 
-const ChatTable = ({ onViewChat, onReply, refresh, onMessageSent }) => {
+const ChatTable = ({ onViewChat, onReply, refresh, onMessageSent, chatRooms: externalChatRooms }) => {
   const [chatRooms, setChatRooms] = useState([]);
   const [loading, setLoading] = useState(true);
   const [pagination, setPagination] = useState({
@@ -37,6 +37,14 @@ const ChatTable = ({ onViewChat, onReply, refresh, onMessageSent }) => {
     total: 0,
     totalPages: 0
   });
+
+  // Use external chatRooms if provided, otherwise load internally
+  useEffect(() => {
+    if (externalChatRooms) {
+      setChatRooms(externalChatRooms);
+      setLoading(false);
+    }
+  }, [externalChatRooms]);
 
   const loadChatRooms = async (page = 1, forceRefresh = false) => {
     try {
@@ -69,8 +77,11 @@ const ChatTable = ({ onViewChat, onReply, refresh, onMessageSent }) => {
   };
 
   useEffect(() => {
-    loadChatRooms();
-  }, [refresh]);
+    // Only load if external chatRooms not provided
+    if (!externalChatRooms) {
+      loadChatRooms();
+    }
+  }, [refresh, externalChatRooms]);
 
   // Listen for message sent events to update specific room
   useEffect(() => {
@@ -121,18 +132,41 @@ const ChatTable = ({ onViewChat, onReply, refresh, onMessageSent }) => {
   };
 
   const formatDateTime = (dateTime) => {
-    if (!dateTime || dateTime === null || dateTime === undefined) return 'Chưa có';
+    if (!dateTime || dateTime === null || dateTime === undefined || dateTime === '') {
+      return '--:--';
+    }
     
     try {
       const date = new Date(dateTime);
       if (isNaN(date.getTime())) {
-        console.warn('Invalid date in ChatTable:', dateTime);
-        return 'Chưa có';
+        console.warn('Invalid date in ChatTable:', dateTime, 'Type:', typeof dateTime);
+        return '--:--';
       }
-      return format(date, 'dd/MM/yyyy HH:mm', { locale: vi });
+      
+      const now = new Date();
+      const diff = now - date;
+      const hours = Math.floor(diff / (1000 * 60 * 60));
+      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+      
+      // If today, show time only
+      if (days === 0) {
+        return format(date, 'HH:mm', { locale: vi });
+      }
+      // If yesterday, show "Hôm qua"
+      else if (days === 1) {
+        return 'Hôm qua ' + format(date, 'HH:mm', { locale: vi });
+      }
+      // If this year, show date without year
+      else if (date.getFullYear() === now.getFullYear()) {
+        return format(date, 'dd/MM HH:mm', { locale: vi });
+      }
+      // Otherwise show full date
+      else {
+        return format(date, 'dd/MM/yyyy HH:mm', { locale: vi });
+      }
     } catch (error) {
-      console.error('Error formatting date in ChatTable:', error);
-      return 'Chưa có';
+      console.error('Error formatting date in ChatTable:', error, dateTime);
+      return '--:--';
     }
   };
 

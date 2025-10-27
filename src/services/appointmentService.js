@@ -3,7 +3,7 @@ import apiService from './apiService';
 class AppointmentService {
   // Get API URL helper
   getApiUrl() {
-    return process.env.REACT_APP_API_BASE_URL || 'http://192.168.1.35:5074/api';
+    return process.env.REACT_APP_API_BASE_URL || 'http://192.168.1.33:5074/api';
   }
 
   // Get all appointments (for admin)

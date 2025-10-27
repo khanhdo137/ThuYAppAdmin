@@ -9,7 +9,7 @@ import {
   Tabs,
   Typography
 } from '@mui/material';
-import React, { useState } from 'react';
+import React, { useState, useCallback, useRef, useMemo } from 'react';
 import { DataTable, DeleteConfirmDialog, PageTemplate, SearchFilterBar } from '../components';
 import {
   APPOINTMENT_DIALOG_MODES,
@@ -25,6 +25,7 @@ import {
 const AppointmentsPage = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [appointmentToDelete, setAppointmentToDelete] = useState(null);
+  const [localSearchTerm, setLocalSearchTerm] = useState('');
 
   // Use custom hooks for state management
   const {
@@ -42,35 +43,36 @@ const AppointmentsPage = () => {
     validateForm, getSubmissionData
   } = useAppointmentForm({ pets });
 
-  const [searchTimeout, setSearchTimeout] = useState(null);
+  // Use useRef to store timeout ID to avoid re-renders
+  const searchTimeoutRef = useRef(null);
 
-  const handleSearch = (searchValue) => {
-    console.log('handleSearch called with:', searchValue);
+  // Debounced search handler with useCallback
+  const handleSearch = useCallback((searchValue) => {
+    // Update local search term immediately for instant UI feedback
+    setLocalSearchTerm(searchValue);
     
     // Clear previous timeout
-    if (searchTimeout) {
-      clearTimeout(searchTimeout);
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
     }
     
-    // Set new timeout for debounced search
-    const timeout = setTimeout(() => {
+    // Set new timeout for debounced API call
+    searchTimeoutRef.current = setTimeout(() => {
       performSearch(searchValue || '');
-    }, 500); // 500ms delay
-    
-    setSearchTimeout(timeout);
-  };
+    }, 600); // Increased to 600ms for better performance
+  }, [performSearch]);
 
-  // Handle form submission
-  const handleCreateAppointment = async () => {
+  // Handle form submission with useCallback
+  const handleCreateAppointment = useCallback(async () => {
     if (!validateForm()) return;
     
     const result = await createAppointment(getSubmissionData());
     if (result.success) {
       closeDialog();
     }
-  };
+  }, [validateForm, createAppointment, getSubmissionData, closeDialog]);
 
-  const handleUpdateAppointment = async () => {
+  const handleUpdateAppointment = useCallback(async () => {
     if (!validateForm()) return;
     
     const appointmentId = selectedAppointment.AppointmentId || selectedAppointment.appointmentId;
@@ -78,30 +80,30 @@ const AppointmentsPage = () => {
     if (result.success) {
       closeDialog();
     }
-  };
+  }, [validateForm, selectedAppointment, updateAppointment, getSubmissionData, closeDialog]);
 
-  const handleDeleteClick = (appointment) => {
+  const handleDeleteClick = useCallback((appointment) => {
     setAppointmentToDelete(appointment);
     setDeleteDialogOpen(true);
-  };
+  }, []);
 
-  const handleDeleteConfirm = async () => {
+  const handleDeleteConfirm = useCallback(async () => {
     if (!appointmentToDelete) return;
     
     const appointmentId = appointmentToDelete.AppointmentId || appointmentToDelete.appointmentId;
     await deleteAppointment(appointmentId);
     setDeleteDialogOpen(false);
     setAppointmentToDelete(null);
-  };
+  }, [appointmentToDelete, deleteAppointment]);
 
-  // Get table columns with handlers
-  const columns = getAppointmentTableColumns({
+  // Memoize table columns to prevent unnecessary re-renders
+  const columns = useMemo(() => getAppointmentTableColumns({
     pets,
     services, 
     customers,
     doctors,
     onStatusUpdate: updateAppointmentStatus
-  });
+  }), [pets, services, customers, doctors, updateAppointmentStatus]);
 
   // Status filter options for tabs
   const statusTabs = [
@@ -156,7 +158,7 @@ const AppointmentsPage = () => {
         </Tabs>
 
         <SearchFilterBar
-          searchValue={searchTerm}
+          searchValue={localSearchTerm}
           onSearchChange={handleSearch}
           placeholder={APPOINTMENT_SEARCH_PLACEHOLDER}
         />
