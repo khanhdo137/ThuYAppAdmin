@@ -1,0 +1,104 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# Routing & Navigation Guide
+
+## Route Structure
+The application uses React Router Dom with a protected admin area structure defined in [src/App.js](mdc:src/App.js).
+
+## Route Hierarchy
+```
+/ → Redirect to /login
+├── /login (Public) → LoginPage
+├── /logout → Logout handler
+└── /admin/* (Protected) → DashboardLayout wrapper
+    ├── /admin/dashboard → DashboardPage
+    ├── /admin/appointments → AppointmentsPage (Lịch khám)
+    ├── /admin/customers → CustomersPage (Khách hàng)
+    ├── /admin/doctors → DoctorsPage (Bác sĩ)
+    ├── /admin/pets → PetsPage (Thú cưng)
+    ├── /admin/services → ServicesPage (Dịch vụ)
+    ├── /admin/news → NewsPage (Tin tức)
+    └── /admin/users → UsersPage (Tài khoản)
+```
+
+## Legacy Route Redirects
+Legacy routes automatically redirect to the new `/admin/*` structure:
+- `/dashboard` → `/admin/dashboard`
+- `/appointments` → `/admin/appointments`
+- `/customers` → `/admin/customers`
+- etc.
+
+## Navigation Menu
+The sidebar navigation is configured in [src/layout/DashboardLayout.js](mdc:src/layout/DashboardLayout.js) with Vietnamese labels:
+
+```jsx
+const menuItems = [
+  { text: 'Dashboard', icon: <Dashboard />, path: '/admin/dashboard' },
+  { text: 'Lịch khám', icon: <Schedule />, path: '/admin/appointments' },
+  { text: 'Khách hàng', icon: <People />, path: '/admin/customers' },
+  { text: 'Bác sĩ', icon: <MedicalServices />, path: '/admin/doctors' },
+  { text: 'Thú cưng', icon: <Pets />, path: '/admin/pets' },
+  { text: 'Dịch vụ', icon: <LocalHospital />, path: '/admin/services' },
+  { text: 'Tin tức', icon: <Article />, path: '/admin/news' },
+  { text: 'Tài khoản', icon: <AccountCircle />, path: '/admin/users' },
+];
+```
+
+## Page Components Location
+All page components are in `/src/pages/`:
+- [src/pages/DashboardPage.js](mdc:src/pages/DashboardPage.js)
+- [src/pages/AppointmentsPage.js](mdc:src/pages/AppointmentsPage.js)
+- [src/pages/CustomersPage.js](mdc:src/pages/CustomersPage.js)
+- [src/pages/DoctorsPage.js](mdc:src/pages/DoctorsPage.js)
+- [src/pages/PetsPage.js](mdc:src/pages/PetsPage.js)
+- [src/pages/ServicesPage.js](mdc:src/pages/ServicesPage.js)
+- [src/pages/NewsPage.js](mdc:src/pages/NewsPage.js)
+- [src/pages/UsersPage.js](mdc:src/pages/UsersPage.js)
+- [src/pages/LoginPage.js](mdc:src/pages/LoginPage.js)
+- [src/pages/Logout.js](mdc:src/pages/Logout.js)
+
+## Authentication
+- **PrivateRoute Component**: [src/components/PrivateRoute.js](mdc:src/components/PrivateRoute.js) protects admin routes
+- **Authentication Check**: Uses `localStorage.getItem('isAuthenticated')`
+- **Logout Process**: Removes auth token and redirects to root
+
+## Navigation Patterns
+
+### Adding New Routes
+1. Create page component in `/src/pages/`
+2. Add route to [src/App.js](mdc:src/App.js) under the `/admin` parent route
+3. Add menu item to [src/layout/DashboardLayout.js](mdc:src/layout/DashboardLayout.js) if needed
+4. Import page component at the top of App.js
+
+### Route Parameters
+Use React Router hooks for navigation and params:
+```jsx
+import { useNavigate, useLocation, useParams } from 'react-router-dom';
+
+const navigate = useNavigate();
+const location = useLocation();
+const { id } = useParams();
+```
+
+### Programmatic Navigation
+```jsx
+// Navigate to specific admin page
+navigate('/admin/customers');
+
+// Navigate with state
+navigate('/admin/customers', { state: { fromDashboard: true } });
+
+// Go back
+navigate(-1);
+```
+
+## Mobile Navigation
+- Sidebar collapses to temporary drawer on mobile (`md` breakpoint)
+- Navigation automatically closes after selection on mobile
+- Responsive hamburger menu in header
+
+## Active Route Highlighting
+The DashboardLayout automatically highlights the active menu item based on `location.pathname` matching the menu item path.

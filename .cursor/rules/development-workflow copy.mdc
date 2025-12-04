@@ -1,0 +1,221 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+---
+Rule Name: ThuYBinhDuong/development-workflow
+Description: Comprehensive development workflow emphasizing backend-first approach, role-based constraints, project setup instructions, debugging guidelines, and deployment procedures for both .NET API and React admin dashboard.
+---
+
+# Development Workflow (Backend-First Approach)
+
+## ⚠️ CRITICAL DEVELOPMENT RULES
+
+### 1. Backend-First Development
+- **ALWAYS check backend API FIRST** before making frontend changes
+- If functionality doesn't exist in backend: Create Models → DTOs → Controllers → Test API
+- **NEVER modify customer-facing code** - Only admin functionality allowed
+- All new features must consider admin/customer reusability
+
+### 2. Role-Based Development Constraints
+- ✅ **ALLOWED**: Modify [AdminDashboard/src](mdc:AdminDashboard/src) for admin features
+- ❌ **FORBIDDEN**: Modify existing customer code or endpoints
+- Must use proper authorization: `[AuthorizeRole(1)]` for admin endpoints
+
+## Project Setup
+
+### Initial Setup
+1. **Clone Repository**: Ensure you have both AdminDashboard and ThuYBinhDuongAPI folders
+2. **Database Setup**: Configure SQL Server connection in [appsettings.json](mdc:ThuYBinhDuongAPI/appsettings.json)
+3. **Install Dependencies**:
+   ```bash
+   # Backend
+   cd ThuYBinhDuongAPI
+   dotnet restore
+   
+   # Frontend
+   cd AdminDashboard
+   npm install
+   ```
+
+### Environment Configuration
+1. **API Configuration**: Update connection strings in appsettings.json
+2. **Frontend Configuration**: Create `.env` file in AdminDashboard:
+   ```env
+   REACT_APP_API_BASE_URL=https://localhost:7048/api
+   ```
+
+## Development Commands
+
+### Backend (ThuYBinhDuongAPI)
+```bash
+cd ThuYBinhDuongAPI
+
+# Restore packages
+dotnet restore
+
+# Build project
+dotnet build
+
+# Run development server
+dotnet run
+
+# Database operations
+dotnet ef migrations add [MigrationName]
+dotnet ef database update
+
+# Run tests
+dotnet test
+```
+
+### Frontend (AdminDashboard)
+```bash
+cd AdminDashboard
+
+# Install dependencies
+npm install
+
+# Start development server
+npm start
+
+# Build for production
+npm run build
+
+# Run tests
+npm test
+
+# Run tests with coverage
+npm test -- --coverage
+```
+
+## Development Process
+
+### 1. Backend Development
+1. **Model Changes**: Update entities in [Models/](mdc:ThuYBinhDuongAPI/Models)
+2. **Database Migration**: Create and apply EF migrations
+3. **DTOs**: Update or create DTOs in [Data/Dtos/](mdc:ThuYBinhDuongAPI/Data/Dtos)
+4. **Controllers**: Implement API endpoints in [Controllers/](mdc:ThuYBinhDuongAPI/Controllers)
+5. **Services**: Add business logic to [Services/](mdc:ThuYBinhDuongAPI/Services)
+6. **Testing**: Test endpoints using Swagger UI at `/swagger`
+
+### 2. Frontend Development (Admin Only)
+1. **Backend Verification**: Ensure backend API exists and works FIRST
+2. **Components**: Create reusable components in [components/](mdc:AdminDashboard/src/components)
+3. **Pages**: Implement admin screens in [pages/](mdc:AdminDashboard/src/pages)
+4. **Services**: Add API integration in [services/](mdc:AdminDashboard/src/services)
+5. **Toast Integration**: Use [ToastProvider.js](mdc:AdminDashboard/src/components/ToastProvider.js) for notifications
+6. **Field Mapping**: Handle PascalCase ↔ camelCase conversion correctly
+7. **Testing**: Test admin functionality only, avoid customer code
+
+### 3. Integration Testing
+1. **API Testing**: Use Swagger UI or Postman to test API endpoints
+2. **Frontend Testing**: Test React components and user flows
+3. **End-to-End**: Test complete user journeys from login to data operations
+4. **Cross-Browser**: Verify compatibility across different browsers
+
+## Code Quality Standards
+
+### Backend Standards
+- Follow C# naming conventions (PascalCase for public members)
+- Use async/await for database operations
+- Implement proper error handling and logging
+- Use DTOs for API request/response models
+- Apply proper authorization attributes
+- Write XML documentation for public APIs
+
+### Frontend Standards
+- Follow React best practices and hooks patterns
+- Use Material-UI components consistently
+- Implement proper error boundaries
+- Follow established component patterns in [components/USAGE_GUIDE.md](mdc:AdminDashboard/src/components/USAGE_GUIDE.md)
+- Use TypeScript-style prop validation where possible
+- Maintain responsive design principles
+
+## Debugging and Troubleshooting
+
+### Common Issues
+
+#### Backend Issues
+1. **Database Connection**: Check connection string and SQL Server status
+2. **Migration Errors**: Ensure database schema is up to date
+3. **CORS Errors**: Verify CORS policy in [Program.cs](mdc:ThuYBinhDuongAPI/Program.cs)
+4. **Authentication**: Check JWT configuration and token generation
+
+#### Frontend Issues
+1. **API Connection**: Verify API_BASE_URL in environment variables
+2. **Authentication**: Check token storage and authorization headers
+3. **HTTPS Issues**: Use HTTP fallback for local development
+4. **Component Errors**: Check console for React error messages
+
+### Debugging Tools
+
+#### Backend Debugging
+- **Swagger UI**: Test API endpoints at `/swagger`
+- **Visual Studio**: Set breakpoints and step through code
+- **Logs**: Check console output for error messages
+- **Database**: Use SQL Server Management Studio to inspect data
+
+#### Frontend Debugging
+- **Browser DevTools**: Use Console, Network, and React DevTools
+- **React DevTools**: Inspect component state and props
+- **Network Tab**: Monitor API calls and responses
+- **Console Logs**: Check for JavaScript errors and API responses
+
+## Testing Strategy
+
+### Backend Testing
+- **Unit Tests**: Test individual methods and business logic
+- **Integration Tests**: Test API endpoints with database
+- **Authentication Tests**: Verify JWT token generation and validation
+- **Authorization Tests**: Ensure role-based access control works
+
+### Frontend Testing
+- **Component Tests**: Test individual React components
+- **Integration Tests**: Test component interactions and API calls
+- **User Flow Tests**: Test complete user journeys
+- **Responsive Tests**: Verify mobile and desktop layouts
+
+## Deployment Preparation
+
+### Backend Deployment
+1. **Configuration**: Update appsettings.json for production
+2. **Database**: Apply migrations to production database
+3. **Security**: Ensure HTTPS and secure JWT configuration
+4. **Performance**: Optimize database queries and enable caching
+
+### Frontend Deployment
+1. **Build**: Create production build with `npm run build`
+2. **Environment**: Set production API URL
+3. **Optimization**: Ensure code splitting and lazy loading
+4. **Static Files**: Configure proper hosting for React SPA
+
+## Documentation Maintenance
+
+Keep these documentation files updated:
+- [API_INTEGRATION.md](mdc:AdminDashboard/API_INTEGRATION.md) - API integration guide
+- [USAGE_GUIDE.md](mdc:AdminDashboard/src/components/USAGE_GUIDE.md) - Component usage
+- [API_DOCUMENTATION.md](mdc:ThuYBinhDuongAPI/API_DOCUMENTATION.md) - API documentation
+- [DEVELOPMENT_GUIDE.md](mdc:ThuYBinhDuongAPI/DEVELOPMENT_GUIDE.md) - Backend development
+- README files in both projects
+
+## Version Control Best Practices
+
+### Branch Strategy
+- **main**: Production-ready code
+- **develop**: Integration branch for features
+- **feature/**: Individual feature development
+- **hotfix/**: Critical bug fixes
+
+### Commit Guidelines
+- Use clear, descriptive commit messages
+- Separate backend and frontend changes when possible
+- Include relevant issue numbers in commit messages
+- Keep commits focused on single changes
+
+### Code Reviews
+- Review both backend and frontend changes
+- Check for security vulnerabilities
+- Verify proper error handling
+- Ensure code follows established patterns
+- Test functionality before merging
