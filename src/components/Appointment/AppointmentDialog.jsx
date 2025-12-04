@@ -15,6 +15,7 @@ import {
   APPOINTMENT_TIME_SLOTS
 } from './appointmentConstants';
 import { formatPetDisplay, formatServiceDisplay } from './appointmentUtils';
+import AppointmentDetailView from './AppointmentDetailView';
 
 const AppointmentDialog = ({
   open,
@@ -29,7 +30,8 @@ const AppointmentDialog = ({
   pets,
   services,
   doctors,
-  customers
+  customers,
+  feedback = [] // Feedback for view mode
 }) => {
   const isViewMode = dialogMode === APPOINTMENT_DIALOG_MODES.VIEW;
   const isCreateMode = dialogMode === APPOINTMENT_DIALOG_MODES.CREATE;
@@ -60,15 +62,58 @@ const AppointmentDialog = ({
     <Dialog 
       open={open} 
       onClose={onClose}
-      maxWidth="md"
-      fullWidth
+      maxWidth={isViewMode ? "md" : "md"}
+      fullWidth={!isViewMode}
+      PaperProps={{
+        sx: {
+          borderRadius: 3,
+          boxShadow: '0 20px 60px rgba(0,0,0,0.15)',
+          ...(isViewMode && {
+            background: 'linear-gradient(to bottom, rgba(255,255,255,0.98), rgba(255,255,255,1))',
+            backdropFilter: 'blur(10px)',
+            width: '700px',
+            maxWidth: '95vw'
+          })
+        }
+      }}
     >
-      <DialogTitle>
-        {getDialogTitle()}
-      </DialogTitle>
+      {!isViewMode && (
+        <DialogTitle>
+          {getDialogTitle()}
+        </DialogTitle>
+      )}
       
-      <DialogContent>
-        <Box display="flex" flexDirection="column" gap={2} pt={1}>
+      <DialogContent sx={{ 
+        p: 0,
+        ...(isViewMode && { 
+          overflow: 'auto',
+          maxHeight: '600px',
+          display: 'flex',
+          flexDirection: 'column',
+          '&::-webkit-scrollbar': {
+            width: '6px',
+          },
+          '&::-webkit-scrollbar-track': {
+            background: '#f1f1f1',
+            borderRadius: '10px',
+          },
+          '&::-webkit-scrollbar-thumb': {
+            background: '#888',
+            borderRadius: '10px',
+            '&:hover': {
+              background: '#555',
+            },
+          },
+        }),
+        ...(!isViewMode && { pt: 1 })
+      }}>
+        {isViewMode ? (
+          <AppointmentDetailView 
+            appointment={formData}
+            feedback={feedback}
+          />
+        ) : (
+        <Box display="flex" flexDirection="column" gap={2} px={3}>
           {/* Pet Selection */}
           <TextField
             label="Thú cưng"
@@ -198,11 +243,31 @@ const AppointmentDialog = ({
             fullWidth
           />
         </Box>
+        )}
       </DialogContent>
 
-      <DialogActions>
-        <Button onClick={onClose} disabled={loading}>
-          Hủy
+      <DialogActions sx={{ 
+        p: 2.5,
+        borderTop: isViewMode ? '1px solid rgba(0,0,0,0.08)' : 'none',
+        background: isViewMode ? 'rgba(248, 249, 250, 0.8)' : 'transparent'
+      }}>
+        <Button 
+          onClick={onClose} 
+          disabled={loading}
+          variant={isViewMode ? "contained" : "text"}
+          sx={{
+            ...(isViewMode && {
+              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+              color: 'white',
+              fontWeight: 600,
+              px: 4,
+              '&:hover': {
+                background: 'linear-gradient(135deg, #5568d3 0%, #6a3f8f 100%)',
+              }
+            })
+          }}
+        >
+          {isViewMode ? 'Đóng' : 'Hủy'}
         </Button>
         {!isViewMode && (
           <Button 

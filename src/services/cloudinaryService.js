@@ -1,8 +1,15 @@
 class CloudinaryService {
   constructor() {
-    // These should be set in your environment variables
-    this.cloudName = process.env.REACT_APP_CLOUDINARY_CLOUD_NAME || 'your-cloud-name';
-    this.uploadPreset = process.env.REACT_APP_CLOUDINARY_UPLOAD_PRESET || 'your-upload-preset';
+    // Prefer environment variables; fall back to known working values used in other modules (ChatDialog).
+    const DEFAULT_CLOUD_NAME = 'dl6lq6ord';
+    const DEFAULT_UPLOAD_PRESET = 'ThuYHuongNo';
+
+    this.cloudName = process.env.REACT_APP_CLOUDINARY_CLOUD_NAME || DEFAULT_CLOUD_NAME;
+    this.uploadPreset = process.env.REACT_APP_CLOUDINARY_UPLOAD_PRESET || DEFAULT_UPLOAD_PRESET;
+
+    if (!process.env.REACT_APP_CLOUDINARY_CLOUD_NAME || !process.env.REACT_APP_CLOUDINARY_UPLOAD_PRESET) {
+      console.warn('[CloudinaryService] Missing .env configuration. Using fallback values. Please create a .env file with REACT_APP_CLOUDINARY_CLOUD_NAME and REACT_APP_CLOUDINARY_UPLOAD_PRESET to avoid hard-coded defaults.');
+    }
   }
 
   getUploadUrl(resourceType = 'image') {

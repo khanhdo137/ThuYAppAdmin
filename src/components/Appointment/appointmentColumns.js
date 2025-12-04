@@ -99,6 +99,32 @@ export const getAppointmentTableColumns = ({
     }
   },
   {
+    field: 'createdAt',
+    label: 'Giờ đặt',
+    minWidth: APPOINTMENT_TABLE_MIN_WIDTHS.CREATED_AT || 150,
+    render: (row) => {
+      const createdAt = row.CreatedAt || row.createdAt;
+      if (!createdAt) return 'N/A';
+      
+      try {
+        const date = new Date(createdAt);
+        const dateStr = date.toLocaleDateString('vi-VN', {
+          day: '2-digit',
+          month: '2-digit',
+          year: 'numeric'
+        });
+        const timeStr = date.toLocaleTimeString('vi-VN', {
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: false
+        });
+        return `${dateStr} ${timeStr}`;
+      } catch (error) {
+        return 'Invalid date';
+      }
+    }
+  },
+  {
     field: 'notes',
     label: 'Ghi chú',
     minWidth: APPOINTMENT_TABLE_MIN_WIDTHS.NOTES,

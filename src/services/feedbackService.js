@@ -139,11 +139,24 @@ class FeedbackService {
     switch (rating) {
       case 1: return 'error';
       case 2: return 'warning';
-      case 3: return 'default';
-      case 4: return 'info';
+      case 3: return 'info';
+      case 4: return 'primary';
       case 5: return 'success';
       default: return 'default';
     }
+  }
+
+  // Get sentiment analysis
+  getSentiment(rating) {
+    if (rating >= 4) return { label: 'Tích cực', color: 'success' };
+    if (rating === 3) return { label: 'Trung lập', color: 'info' };
+    return { label: 'Tiêu cực', color: 'error' };
+  }
+
+  // Calculate percentage
+  calculatePercentage(count, total) {
+    if (!total || total === 0) return 0;
+    return ((count / total) * 100).toFixed(1);
   }
 
   // Normalize feedback data

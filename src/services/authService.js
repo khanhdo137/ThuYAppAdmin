@@ -1,6 +1,4 @@
-// Thử cả HTTPS và HTTP cho localhost
-const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://192.168.1.33:5074/api';
-const API_BASE_URL_HTTP = 'http://192.168.1.33:5074/api';
+import { API_BASE_URL, API_BASE_URL_HTTP, API_IP } from './config';
 
 // Role constants - ĐÚNG theo backend
 const ROLES = {
@@ -25,7 +23,7 @@ class AuthService {
     } catch (error) {
       console.warn('HTTP failed, trying alternative:', error.message);
       // Nếu HTTP fail, thử với localhost
-      const localhostUrl = url.replace('192.168.1.33', 'localhost');
+      const localhostUrl = url.replace(API_IP, 'localhost');
       return await fetch(localhostUrl, options);
     }
   }

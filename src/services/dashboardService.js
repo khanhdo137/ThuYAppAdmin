@@ -352,6 +352,10 @@ const dashboardService = {
     return await dashboardService.getFlexibleDashboard('specific-month', { month, year });
   },
 
+  getDateRangeData: async (fromDate, toDate) => {
+    return await dashboardService.getFlexibleDashboard('date-range', { fromDate, toDate });
+  },
+
   // Format filter display for UI
   getFilterTypeLabel: (filterType) => {
     const labels = {
@@ -361,7 +365,8 @@ const dashboardService = {
       'last-30-days': '30 ngày gần nhất',
       'this-week': 'Tuần này',
       'last-week': 'Tuần trước',
-      'specific-month': 'Tháng cụ thể'
+      'specific-month': 'Tháng cụ thể',
+      'date-range': 'Khoảng thời gian'
     };
     return labels[filterType] || 'Hôm nay';
   },

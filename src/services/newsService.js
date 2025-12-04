@@ -1,4 +1,5 @@
 import apiService from './apiService';
+import { API_BASE_URL } from './config';
 
 class NewsService {
   // Get all news (for admin)
@@ -89,7 +90,7 @@ class NewsService {
         tags: newsData.tags || null
       };
 
-      const response = await fetch(`${process.env.REACT_APP_API_BASE_URL || 'http://localhost:5074/api'}/News/admin/${id}`, {
+      const response = await fetch(`${API_BASE_URL}/News/admin/${id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

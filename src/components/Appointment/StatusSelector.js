@@ -287,30 +287,10 @@ const StatusSelector = ({ appointmentId, currentStatus, onStatusUpdate, appointm
         showSuccess('Đã hoàn thành lịch hẹn và tạo hồ sơ bệnh án thành công!');
       }
       
-      // ✅ Gọi API check reminders sau khi lưu thành công
+      // ✅ Hệ thống tự động nhắc hẹn sẽ xử lý việc gửi reminders
       if (combinedNextAppointmentDate) {
-        try {
-          // Get user_id from pet's customer
-          const petResponse = await fetch(`http://192.168.1.33:5074/api/Pet/${medicalHistoryData.petId}`, {
-            headers: {
-              'Authorization': `Bearer ${localStorage.getItem('token')}`
-            }
-          });
-          
-          if (petResponse.ok) {
-            const petData = await petResponse.json();
-            const userId = petData.customer?.userId || petData.Customer?.UserId;
-            
-            if (userId) {
-              // Trigger reminder check bằng cách gọi API với user's token
-              // Hoặc dùng một cách khác: gọi check-my-reminders từ mobile app
-              console.log('✅ Medical history created with next appointment. User should check reminders on app.');
-              console.log('📋 User ID:', userId, '- Next appointment:', combinedNextAppointmentDate);
-            }
-          }
-        } catch (reminderError) {
-          console.warn('⚠️ Failed to get user info for reminder:', reminderError);
-        }
+        console.log('✅ Medical history created with next appointment. Automatic reminder system will handle notifications.');
+        console.log('📋 Next appointment:', combinedNextAppointmentDate);
       }
       
       // Đóng dialog

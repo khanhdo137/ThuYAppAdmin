@@ -80,7 +80,7 @@ const MedicalHistoryDialog = ({
     Notes: existingMedicalHistory.Notes
   } : null;
 
-  console.log('MedicalHistoryDialog test data:', testData);
+  // console.log('MedicalHistoryDialog test data:', testData); // Removed to reduce console spam
 
   // Auto-fill dữ liệu khi có appointmentData hoặc existingMedicalHistory
   useEffect(() => {

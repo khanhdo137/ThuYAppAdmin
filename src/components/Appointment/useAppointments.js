@@ -33,6 +33,46 @@ export const useAppointments = () => {
   const toast = useToast();
 
   /**
+   * Enrich appointment with related names
+   */
+  const enrichAppointment = useCallback((appointment, petsData, servicesData, customersData, doctorsData) => {
+    const petId = appointment.PetId || appointment.petId;
+    const serviceId = appointment.ServiceId || appointment.serviceId;
+    const doctorId = appointment.DoctorId || appointment.doctorId;
+    
+    // Find related data
+    const pet = petsData?.find(p => (p.PetId || p.petId) === petId);
+    const service = servicesData?.find(s => (s.ServiceId || s.serviceId) === serviceId);
+    const doctor = doctorsData?.find(d => (d.DoctorId || d.doctorId) === doctorId);
+    const customer = pet ? customersData?.find(c => (c.CustomerId || c.customerId) === (pet.CustomerId || pet.customerId)) : null;
+    
+    return {
+      ...appointment,
+      // Add name fields for easy access
+      PetName: appointment.PetName || appointment.petName || pet?.PetName || pet?.petName || pet?.name || 'Chưa có',
+      petName: appointment.PetName || appointment.petName || pet?.PetName || pet?.petName || pet?.name || 'Chưa có',
+      ServiceName: appointment.ServiceName || appointment.serviceName || service?.ServiceName || service?.serviceName || service?.name || 'Chưa có',
+      serviceName: appointment.ServiceName || appointment.serviceName || service?.ServiceName || service?.serviceName || service?.name || 'Chưa có',
+      DoctorName: appointment.DoctorName || appointment.doctorName || doctor?.FullName || doctor?.fullName || doctor?.name || 'Chưa chọn',
+      doctorName: appointment.DoctorName || appointment.doctorName || doctor?.FullName || doctor?.fullName || doctor?.name || 'Chưa chọn',
+      CustomerName: appointment.CustomerName || appointment.customerName || customer?.FullName || customer?.fullName || customer?.name || 'Chưa có',
+      customerName: appointment.CustomerName || appointment.customerName || customer?.FullName || customer?.fullName || customer?.name || 'Chưa có',
+      OwnerName: appointment.OwnerName || appointment.ownerName || customer?.FullName || customer?.fullName || customer?.name || 'Chưa có',
+      ownerName: appointment.OwnerName || appointment.ownerName || customer?.FullName || customer?.fullName || customer?.name || 'Chưa có',
+      Price: appointment.Price || appointment.price || service?.Price || service?.price || 0,
+      price: appointment.Price || appointment.price || service?.Price || service?.price || 0,
+      // Add pet details
+      Species: pet?.Species || pet?.species || '',
+      species: pet?.Species || pet?.species || '',
+      Breed: pet?.Breed || pet?.breed || '',
+      breed: pet?.Breed || pet?.breed || '',
+      // Add customer phone
+      CustomerPhone: customer?.PhoneNumber || customer?.phoneNumber || customer?.phone || '',
+      customerPhone: customer?.PhoneNumber || customer?.phoneNumber || customer?.phone || ''
+    };
+  }, []);
+
+  /**
    * Sort appointments by date (newest first)
    */
   const sortAppointmentsByDate = useCallback((appointmentsArray) => {
@@ -61,19 +101,36 @@ export const useAppointments = () => {
       
       const processedData = processApiData(results);
       
+      // Set related data first so we can use it for enrichment
+      const petsData = processedData.pets;
+      const servicesData = processedData.services;
+      const customersData = processedData.customers;
+      const doctorsData = processedData.doctors;
+      
+      setPets(petsData);
+      setServices(servicesData);
+      setCustomers(customersData);
+      setDoctors(doctorsData);
+      
       // Handle appointments with pagination
       const appointmentsData = results[0].status === 'fulfilled' ? results[0].value : null;
       console.log('Raw appointments data:', appointmentsData);
       
       if (appointmentsData && appointmentsData.appointments && appointmentsData.pagination) {
-        // Handle paginated response
-        const sortedAppointments = sortAppointmentsByDate(appointmentsData.appointments);
+        // Handle paginated response - ENRICH appointments
+        const enrichedAppointments = appointmentsData.appointments.map(apt => 
+          enrichAppointment(apt, petsData, servicesData, customersData, doctorsData)
+        );
+        const sortedAppointments = sortAppointmentsByDate(enrichedAppointments);
         setAppointments(sortedAppointments);
         setPagination(appointmentsData.pagination);
         console.log('Set pagination:', appointmentsData.pagination);
       } else if (processedData.appointments && Array.isArray(processedData.appointments)) {
-        // Handle simple array response (fallback)
-        const sortedAppointments = sortAppointmentsByDate(processedData.appointments);
+        // Handle simple array response (fallback) - ENRICH appointments
+        const enrichedAppointments = processedData.appointments.map(apt => 
+          enrichAppointment(apt, petsData, servicesData, customersData, doctorsData)
+        );
+        const sortedAppointments = sortAppointmentsByDate(enrichedAppointments);
         setAppointments(sortedAppointments);
         // Set default pagination for non-paginated response
         setPagination({
@@ -91,11 +148,6 @@ export const useAppointments = () => {
           totalPages: 0
         });
       }
-      
-      setPets(processedData.pets);
-      setServices(processedData.services);
-      setCustomers(processedData.customers);
-      setDoctors(processedData.doctors);
       
       // Show errors for failed requests
       const { errors } = processedData;
@@ -149,12 +201,20 @@ export const useAppointments = () => {
       // Handle paginated response
       console.log('Search data:', data);
       if (data && data.appointments && data.pagination) {
-        const sortedAppointments = sortAppointmentsByDate(data.appointments);
+        // ENRICH appointments before sorting
+        const enrichedAppointments = data.appointments.map(apt => 
+          enrichAppointment(apt, pets, services, customers, doctors)
+        );
+        const sortedAppointments = sortAppointmentsByDate(enrichedAppointments);
         setAppointments(sortedAppointments);
         setPagination(data.pagination);
         console.log('Set search pagination:', data.pagination);
       } else if (Array.isArray(data)) {
-        const sortedAppointments = sortAppointmentsByDate(data);
+        // ENRICH appointments before sorting
+        const enrichedAppointments = data.map(apt => 
+          enrichAppointment(apt, pets, services, customers, doctors)
+        );
+        const sortedAppointments = sortAppointmentsByDate(enrichedAppointments);
         setAppointments(sortedAppointments);
         setPagination({
           page: 1,
@@ -178,7 +238,7 @@ export const useAppointments = () => {
     } finally {
       setLoading(false);
     }
-  }, [sortAppointmentsByDate, toast]);
+  }, [sortAppointmentsByDate, toast, enrichAppointment, pets, services, customers, doctors]);
 
   /**
    * Filter appointments by status
@@ -198,12 +258,20 @@ export const useAppointments = () => {
       // Handle paginated response
       console.log('Status filter data:', data);
       if (data && data.appointments && data.pagination) {
-        const sortedAppointments = sortAppointmentsByDate(data.appointments);
+        // ENRICH appointments before sorting
+        const enrichedAppointments = data.appointments.map(apt => 
+          enrichAppointment(apt, pets, services, customers, doctors)
+        );
+        const sortedAppointments = sortAppointmentsByDate(enrichedAppointments);
         setAppointments(sortedAppointments);
         setPagination(data.pagination);
         console.log('Set status filter pagination:', data.pagination);
       } else if (Array.isArray(data)) {
-        const sortedAppointments = sortAppointmentsByDate(data);
+        // ENRICH appointments before sorting
+        const enrichedAppointments = data.map(apt => 
+          enrichAppointment(apt, pets, services, customers, doctors)
+        );
+        const sortedAppointments = sortAppointmentsByDate(enrichedAppointments);
         setAppointments(sortedAppointments);
         setPagination({
           page: 1,
@@ -225,7 +293,7 @@ export const useAppointments = () => {
     } finally {
       setLoading(false);
     }
-  }, [sortAppointmentsByDate, toast]);
+  }, [sortAppointmentsByDate, toast, enrichAppointment, pets, services, customers, doctors]);
 
   /**
    * Handle page change

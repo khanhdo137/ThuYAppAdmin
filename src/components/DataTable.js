@@ -18,7 +18,7 @@ import {
 } from '@mui/material';
 import React from 'react';
 
-const DataTable = ({ 
+function DataTable({ 
   columns = [], 
   data = [], 
   onView,
@@ -31,7 +31,7 @@ const DataTable = ({
   onLimitChange = null,
   loading = false,
   ...props 
-}) => {
+}) {
   // Only show actions if showActions is true AND at least one action handler is provided
   const shouldShowActions = showActions && (onView || onEdit || onDelete);
 
@@ -184,7 +184,7 @@ const DataTable = ({
     {/* Pagination */}
     {pagination && onPageChange && (
       <>
-        {console.log('DataTable pagination:', pagination)}
+        {/* Removed noisy console log to avoid spam during form typing */}
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 2, px: 2 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
           <Typography variant="body2" color="text.secondary">
@@ -193,23 +193,6 @@ const DataTable = ({
         </Box>
         
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <FormControl size="small" sx={{ minWidth: 80 }}>
-            <Select
-              value={pagination.limit}
-              onChange={(e) => onLimitChange && onLimitChange(e.target.value)}
-              disabled={loading}
-            >
-              <MenuItem value={10}>10</MenuItem>
-              <MenuItem value={15}>15</MenuItem>
-              <MenuItem value={25}>25</MenuItem>
-              <MenuItem value={50}>50</MenuItem>
-            </Select>
-          </FormControl>
-          
-          <Typography variant="body2" sx={{ mx: 1 }}>
-            / trang
-          </Typography>
-          
           <IconButton 
             onClick={() => onPageChange(1)} 
             disabled={pagination.page === 1 || loading}
@@ -253,4 +236,10 @@ const DataTable = ({
 );
 };
 
-export default DataTable; 
+// Lightweight memo: only re-render when data or pagination object reference changes
+export default React.memo(DataTable, (prev, next) => {
+  if (prev.loading !== next.loading) return false;
+  if (prev.data !== next.data) return false;
+  if (prev.pagination !== next.pagination) return false;
+  return true;
+});

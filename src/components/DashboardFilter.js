@@ -6,9 +6,10 @@ import {
   MenuItem,
   Select,
   TextField,
-  Grid
+  Grid,
+  Button
 } from '@mui/material';
-import { FilterList } from '@mui/icons-material';
+import { FilterList, Search } from '@mui/icons-material';
 
 const DashboardFilter = ({ 
   filterType, 
@@ -18,7 +19,10 @@ const DashboardFilter = ({
   selectedMonth,
   onMonthChange,
   selectedYear,
-  onYearChange
+  onYearChange,
+  dateRange,
+  onDateRangeChange,
+  onApplyDateRange
 }) => {
   const currentYear = new Date().getFullYear();
   const years = Array.from({ length: 5 }, (_, i) => currentYear - i);
@@ -62,9 +66,50 @@ const DashboardFilter = ({
               <MenuItem value="this-week">Tuần này</MenuItem>
               <MenuItem value="last-week">Tuần trước</MenuItem>
               <MenuItem value="specific-month">Tháng cụ thể</MenuItem>
+              <MenuItem value="date-range">Khoảng thời gian</MenuItem>
             </Select>
           </FormControl>
         </Grid>
+
+        {/* Date Range Picker (for date-range) */}
+        {filterType === 'date-range' && (
+          <>
+            <Grid item xs={12} sm={6} md={3}>
+              <TextField
+                fullWidth
+                size="small"
+                type="date"
+                label="Từ ngày"
+                value={dateRange?.fromDate || ''}
+                onChange={(e) => onDateRangeChange && onDateRangeChange({ ...dateRange, fromDate: e.target.value })}
+                InputLabelProps={{ shrink: true }}
+              />
+            </Grid>
+            <Grid item xs={12} sm={6} md={3}>
+              <TextField
+                fullWidth
+                size="small"
+                type="date"
+                label="Đến ngày"
+                value={dateRange?.toDate || ''}
+                onChange={(e) => onDateRangeChange && onDateRangeChange({ ...dateRange, toDate: e.target.value })}
+                InputLabelProps={{ shrink: true }}
+              />
+            </Grid>
+            <Grid item xs={12} sm={6} md={2}>
+              <Button
+                fullWidth
+                variant="contained"
+                color="primary"
+                startIcon={<Search />}
+                onClick={onApplyDateRange}
+                sx={{ height: '40px' }}
+              >
+                Áp dụng
+              </Button>
+            </Grid>
+          </>
+        )}
 
         {/* Date Picker (for specific-date) */}
         {filterType === 'specific-date' && (

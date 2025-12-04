@@ -36,9 +36,16 @@ const LoginPage = () => {
 
   // Kiểm tra nếu đã đăng nhập thì redirect
   useEffect(() => {
-    if (authService.isAuthenticated()) {
-      navigate('/admin/dashboard', { replace: true });
-    }
+    const checkAuth = () => {
+      if (authService.isAuthenticated()) {
+        navigate('/admin/dashboard', { replace: true });
+      }
+    };
+    
+    // Small delay to prevent immediate redirect loop
+    const timeoutId = setTimeout(checkAuth, 100);
+    
+    return () => clearTimeout(timeoutId);
   }, [navigate]);
 
   const handleInputChange = (e) => {
@@ -69,10 +76,8 @@ const LoginPage = () => {
       // Show success toast
       toast.showSuccess(`Đăng nhập thành công! Chào mừng ${userData.customerName || userData.username}!`);
       
-      // Small delay để hiển thị toast trước khi chuyển trang
-      setTimeout(() => {
-        navigate('/admin/dashboard', { replace: true });
-      }, 1000);
+      // Navigate immediately without delay to prevent reload issues
+      navigate('/admin/dashboard', { replace: true });
       
     } catch (err) {
       console.error('Login error:', err);

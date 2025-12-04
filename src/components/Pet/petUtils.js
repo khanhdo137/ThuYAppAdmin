@@ -281,14 +281,21 @@ export const findPetById = (pets, petId) => {
  */
 export const formatPetSubmissionData = (formData) => {
   // Convert birthDate to DateOnly format (YYYY-MM-DD)
-  const birthDate = formData.birthDate ? formData.birthDate : null;
+  let birthDate = formData.birthDate ? formData.birthDate : null;
+
+  // Normalize birthDate to YYYY-MM-DD if provided in DD/MM/YYYY
+  if (birthDate && /^(\d{2})\/(\d{2})\/(\d{4})$/.test(birthDate)) {
+    const [day, month, year] = birthDate.split('/');
+    birthDate = `${year}-${month}-${day}`; // ISO format for backend
+  }
   
   return {
+    customerId: formData.customerId || null, // Needed for admin create
     name: formData.name.trim(),
     species: formData.species.trim(),
     breed: formData.breed?.trim() || null,
-    birthDate: birthDate,
-    birthDateString: birthDate, // For API compatibility
+    birthDate: birthDate, // Will bind to BirthDate (nullable)
+    birthDateString: birthDate, // For API compatibility with ParseBirthDate
     imageUrl: formData.imageUrl || null,
     gender: formData.gender || null,
     notes: formData.notes?.trim() || null

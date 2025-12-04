@@ -57,6 +57,7 @@ export const APPOINTMENT_TABLE_MIN_WIDTHS = {
   DATE: 120,
   TIME: 100,
   STATUS: 180,
+  CREATED_AT: 150,
   NOTES: 200
 };
 

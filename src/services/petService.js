@@ -66,25 +66,33 @@ class PetService {
   // Create new pet (admin)
   async createPet(petData) {
     try {
-      const { customerId, name, species, breed, birthDate, imageUrl, gender, weight, color, notes } = petData;
-      
-      // Normalize data for API
+      const { customerId, name, species, breed, birthDate, imageUrl, gender } = petData;
+
+      if (!customerId) {
+        throw new Error('Thiếu customerId - vui lòng chọn chủ sở hữu');
+      }
+      if (!name || !species) {
+        throw new Error('Thiếu tên hoặc loài thú cưng');
+      }
+
+      // Backend endpoint expects customerId as query param, not in body
+      const endpoint = `Pet/admin?customerId=${customerId}`;
+
+      // Body only contains fields from CreatePetDto
+      // Backend dùng BirthDate (DateOnly) hoặc BirthDateString để parse, gửi chuỗi vào BirthDateString an toàn hơn
       const petDto = {
-        customerId: customerId,
-        name: name || '',
-        species: species || null,
-        breed: breed || null,
-        birthDate: birthDate || null,
+        name: name.trim(),
+        species: species.trim(),
+        breed: breed ? breed.trim() : null,
+        birthDateString: birthDate || null, // yyyy-MM-dd
         imageUrl: imageUrl || null,
-        gender: gender || null,
-        weight: weight ? Number(weight) : null,
-        color: color || null,
-        notes: notes || null
+        gender: gender != null ? String(gender) : null
       };
-      
-      console.log('Creating pet with data:', petDto);
-      
-      const result = await apiService.create('Pet/admin', petDto);
+
+      console.log('[PetService] Creating pet via', endpoint, 'body:', petDto);
+
+      const result = await apiService.create(endpoint, petDto);
+      console.log('[PetService] CreatePet success raw response:', result);
       return this.normalizePetData(result);
     } catch (error) {
       console.error('Error in createPet:', error);
@@ -95,19 +103,16 @@ class PetService {
   // Update pet (admin)
   async updatePet(id, petData) {
     try {
-      const { name, species, breed, birthDate, imageUrl, gender, weight, color, notes } = petData;
+      const { name, species, breed, birthDate, imageUrl, gender } = petData;
       
       // Normalize data for API
       const petDto = {
-        name: name || '',
-        species: species || null,
-        breed: breed || null,
-        birthDate: birthDate || null,
+        name: name ? name.trim() : '',
+        species: species ? species.trim() : null,
+        breed: breed ? breed.trim() : null,
+        birthDateString: birthDate || null,
         imageUrl: imageUrl || null,
-        gender: gender || null,
-        weight: weight ? Number(weight) : null,
-        color: color || null,
-        notes: notes || null
+        gender: gender != null ? String(gender) : null
       };
       
       console.log('Updating pet with data:', petDto);

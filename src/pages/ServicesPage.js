@@ -1,5 +1,11 @@
 import {
-  Add as AddIcon
+  Add as AddIcon,
+  LocalHospital as HospitalIcon,
+  Refresh as RefreshIcon,
+  Category as CategoryIcon,
+  AttachMoney as MoneyIcon,
+  Schedule as ScheduleIcon,
+  TrendingUp as TrendingUpIcon
 } from '@mui/icons-material';
 import {
   Alert,
@@ -14,7 +20,14 @@ import {
   MenuItem,
   Paper,
   TextField,
-  Typography
+  Typography,
+  Grid,
+  Card,
+  CardContent,
+  Tooltip,
+  IconButton,
+  Fade,
+  Slide
 } from '@mui/material';
 import React, { useEffect, useState } from 'react';
 import { DeleteConfirmDialog } from '../components';
@@ -31,6 +44,7 @@ const ServicesPage = () => {
   const [dialogMode, setDialogMode] = useState('view'); // 'view', 'edit', 'create'
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [serviceToDelete, setServiceToDelete] = useState(null);
+  const [refreshing, setRefreshing] = useState(false);
 
   // Use services hook
   const {
@@ -187,6 +201,140 @@ const ServicesPage = () => {
     }
   };
 
+  // Handle refresh
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    // Refresh services data
+    window.location.reload(); // Simple refresh for now
+    setRefreshing(false);
+  };
+
+  // Calculate statistics
+  const stats = React.useMemo(() => {
+    const servicesArray = Array.isArray(services) ? services : [];
+    const categoryCount = {};
+    let totalPrice = 0;
+    let totalDuration = 0;
+
+    servicesArray.forEach(service => {
+      // Count by category
+      const category = service.category || service.Category || 'Khác';
+      categoryCount[category] = (categoryCount[category] || 0) + 1;
+
+      // Sum prices and durations
+      const price = parseFloat(service.price || service.Price || 0);
+      const duration = parseInt(service.duration || service.Duration || 0);
+      totalPrice += price;
+      totalDuration += duration;
+    });
+
+    const topCategories = Object.entries(categoryCount)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 3);
+
+    return {
+      total: servicesArray.length,
+      byCategory: categoryCount,
+      topCategories,
+      averagePrice: servicesArray.length > 0 ? Math.round(totalPrice / servicesArray.length) : 0,
+      averageDuration: servicesArray.length > 0 ? Math.round(totalDuration / servicesArray.length) : 0
+    };
+  }, [services]);
+
+  // Render statistics cards - Always show full layout
+  const renderStatisticsCards = () => {
+    const cards = [
+      {
+        title: 'Tổng số dịch vụ',
+        value: stats.total,
+        icon: HospitalIcon,
+        gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
+      },
+      {
+        title: 'Giá trung bình',
+        value: serviceService.formatPrice(stats.averagePrice),
+        icon: MoneyIcon,
+        gradient: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)'
+      },
+      {
+        title: 'Thời gian TB',
+        value: `${stats.averageDuration}p`,
+        icon: ScheduleIcon,
+        gradient: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)'
+      },
+      {
+        title: 'Danh mục',
+        value: Object.keys(stats.byCategory).length,
+        icon: CategoryIcon,
+        gradient: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)'
+      }
+    ];
+
+    return (
+      <Grid container spacing={3} sx={{ mb: 3 }}>
+        {/* Show all 4 cards */}
+        {cards.map((card, index) => (
+          <Grid item xs={12} sm={6} md={3} key={index}>
+            <Card sx={{ 
+              height: '100%',
+              minHeight: '120px',
+              background: card.gradient,
+              color: 'white',
+              transition: 'transform 0.3s ease',
+              '&:hover': { transform: 'translateY(-5px)' }
+            }}>
+              <CardContent sx={{ height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                <Box display="flex" alignItems="center" justifyContent="space-between">
+                  <Box>
+                    <Typography variant="body2" sx={{ opacity: 0.9, mb: 1 }}>
+                      {card.title}
+                    </Typography>
+                    <Typography variant="h4" fontWeight="bold">
+                      {card.value}
+                    </Typography>
+                  </Box>
+                  <card.icon sx={{ fontSize: 48, opacity: 0.3 }} />
+                </Box>
+              </CardContent>
+            </Card>
+          </Grid>
+        ))}
+        
+        {/* Always show trending card if data available */}
+        {stats.topCategories.length > 0 && (
+          <Grid item xs={12}>
+            <Card sx={{ 
+              background: 'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)',
+              transition: 'transform 0.3s ease',
+              '&:hover': { transform: 'translateY(-2px)' }
+            }}>
+              <CardContent>
+                <Box display="flex" alignItems="center" gap={2}>
+                  <TrendingUpIcon sx={{ fontSize: 40, color: '#667eea' }} />
+                  <Box flex={1}>
+                    <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                      Danh mục dịch vụ phổ biến nhất
+                    </Typography>
+                    <Box display="flex" gap={3} flexWrap="wrap">
+                      {stats.topCategories.map(([category, count], index) => (
+                        <Box key={category} display="flex" alignItems="center" gap={1}>
+                          <HospitalIcon sx={{ color: '#667eea', fontSize: 20 }} />
+                          <Typography variant="body1" fontWeight="bold" color="primary">
+                            {serviceService.getServiceCategories().find(cat => cat.value === category)?.label || category}: {count}
+                          </Typography>
+                        </Box>
+                      ))}
+                    </Box>
+                  </Box>
+                </Box>
+              </CardContent>
+            </Card>
+          </Grid>
+        )}
+      </Grid>
+    );
+  };
+
   const getCategoryChip = (category) => {
     const colorMap = {
       'kham-tong-quat': 'primary',
@@ -254,49 +402,115 @@ const ServicesPage = () => {
 
   return (
     <PageTemplate title="Quản lý dịch vụ" subtitle="Quản lý các dịch vụ y tế cho thú cưng">
-      {error && (
-        <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>
-          {error}
-        </Alert>
-      )}
+      <Fade in={true} timeout={600}>
+        <Box>
+          {error && (
+            <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>
+              {error}
+            </Alert>
+          )}
 
-      <Paper sx={{ p: 3 }}>
-        <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-          <Typography variant="h6">
-            Danh sách dịch vụ ({services.length})
-          </Typography>
-          <Box display="flex" gap={2}>
+          {/* Statistics Cards - Always show full layout */}
+          {renderStatisticsCards()}
 
+          {/* Main Content */}
+          <Paper sx={{ 
+            p: 3,
+            background: 'linear-gradient(to bottom, rgba(255,255,255,0.9), rgba(255,255,255,1))',
+            backdropFilter: 'blur(10px)',
+            boxShadow: '0 8px 32px rgba(0,0,0,0.1)'
+          }}>
+            {/* Header with Actions */}
+            <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
+              <Box sx={{ 
+                display: 'flex', 
+                alignItems: 'center',
+                gap: 2,
+                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                backgroundClip: 'text'
+              }}>
+                <HospitalIcon sx={{ fontSize: 32, color: '#667eea' }} />
+                <Typography variant="h5" fontWeight="bold">
+                  Danh sách dịch vụ ({stats.total})
+                </Typography>
+              </Box>
+              
+              <Box display="flex" gap={1}>
+                <Tooltip title="Làm mới dữ liệu">
+                  <IconButton 
+                    onClick={handleRefresh}
+                    disabled={refreshing}
+                    sx={{
+                      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                      color: 'white',
+                      '&:hover': {
+                        background: 'linear-gradient(135deg, #764ba2 0%, #667eea 100%)',
+                        transform: 'rotate(180deg)',
+                        transition: 'transform 0.6s ease'
+                      }
+                    }}
+                  >
+                    <RefreshIcon sx={{ 
+                      animation: refreshing ? 'spin 1s linear infinite' : 'none',
+                      '@keyframes spin': {
+                        '0%': { transform: 'rotate(0deg)' },
+                        '100%': { transform: 'rotate(360deg)' }
+                      }
+                    }} />
+                  </IconButton>
+                </Tooltip>
+                
+                <Button
+                  variant="contained"
+                  startIcon={<AddIcon />}
+                  onClick={() => openDialog('create')}
+                  sx={{
+                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                    color: 'white',
+                    fontWeight: 'bold',
+                    px: 3,
+                    boxShadow: '0 4px 15px rgba(102, 126, 234, 0.4)',
+                    '&:hover': {
+                      background: 'linear-gradient(135deg, #764ba2 0%, #667eea 100%)',
+                      boxShadow: '0 6px 20px rgba(102, 126, 234, 0.6)',
+                      transform: 'translateY(-2px)'
+                    },
+                    transition: 'all 0.3s ease'
+                  }}
+                >
+                  Thêm dịch vụ
+                </Button>
+              </Box>
+            </Box>
 
-            <Button
-              variant="contained"
-              startIcon={<AddIcon />}
-              onClick={() => openDialog('create')}
-            >
-              Thêm dịch vụ
-            </Button>
-          </Box>
+            <Box sx={{ mb: 3 }}>
+              <SearchFilterBar
+                searchValue={searchTerm}
+                onSearchChange={handleSearchDebounced}
+                placeholder="Tìm kiếm theo tên dịch vụ, mô tả..."
+              />
+            </Box>
+
+            <Slide direction="up" in={true} timeout={800}>
+              <Box>
+                <DataTable
+                  columns={columns}
+                  data={services}
+                  loading={loading}
+                  emptyMessage="Không có dịch vụ nào"
+                  onView={(row) => openDialog('view', row)}
+                  onEdit={(row) => openDialog('edit', row)}
+                  onDelete={handleDeleteClick}
+                  pagination={pagination}
+                  onPageChange={handlePageChange}
+                />
+              </Box>
+            </Slide>
+          </Paper>
         </Box>
-
-        <SearchFilterBar
-          searchValue={searchTerm}
-          onSearchChange={handleSearchDebounced}
-          placeholder="Tìm kiếm theo tên dịch vụ, mô tả..."
-        />
-
-        <DataTable
-          columns={columns}
-          data={services}
-          loading={loading}
-          emptyMessage="Không có dịch vụ nào"
-          onView={(row) => openDialog('view', row)}
-          onEdit={(row) => openDialog('edit', row)}
-          onDelete={handleDeleteClick}
-          pagination={pagination}
-          onPageChange={handlePageChange}
-          onLimitChange={handleLimitChange}
-        />
-      </Paper>
+      </Fade>
 
       {/* Service Dialog */}
       <Dialog 

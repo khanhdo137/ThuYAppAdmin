@@ -52,18 +52,44 @@ export const useAppointmentForm = ({ pets } = {}) => {
       // Calculate pet's age if birth date is available
       const petAge = selectedPet ? calculatePetAge(selectedPet.birthDate || selectedPet.BirthDate) : null;
       
-      // Map appointment data to form format
-      setFormData({
-        petId: petId || '',
-        serviceId: appointment.ServiceId || appointment.serviceId || '',
-        doctorId: appointment.DoctorId || appointment.doctorId || '',
-        appointmentDate: appointment.AppointmentDate || appointment.appointmentDate || '',
-        appointmentTime: appointment.AppointmentTime || appointment.appointmentTime || '',
-        age: petAge !== null ? petAge : (appointment.Age || appointment.age || ''),
-        isNewPet: appointment.IsNewPet || appointment.isNewPet || false,
-        notes: appointment.Notes || appointment.notes || '',
-        status: appointment.Status !== undefined ? appointment.Status : (appointment.status || 0)
-      });
+      // For VIEW mode, keep all data from the appointment row (includes serviceName, doctorName, etc.)
+      // For EDIT mode, only keep the editable fields
+      if (mode === APPOINTMENT_DIALOG_MODES.VIEW) {
+        // Keep ALL fields from appointment for display
+        setFormData({
+          ...appointment, // Keep all original fields
+          // Also normalize the field names
+          petId: petId || '',
+          serviceId: appointment.ServiceId || appointment.serviceId || '',
+          doctorId: appointment.DoctorId || appointment.doctorId || '',
+          appointmentDate: appointment.AppointmentDate || appointment.appointmentDate || '',
+          appointmentTime: appointment.AppointmentTime || appointment.appointmentTime || '',
+          age: petAge !== null ? petAge : (appointment.Age || appointment.age || ''),
+          isNewPet: appointment.IsNewPet || appointment.isNewPet || false,
+          notes: appointment.Notes || appointment.notes || '',
+          status: appointment.Status !== undefined ? appointment.Status : (appointment.status || 0),
+          // Ensure name fields are available
+          serviceName: appointment.ServiceName || appointment.serviceName || '',
+          doctorName: appointment.DoctorName || appointment.doctorName || '',
+          petName: appointment.PetName || appointment.petName || '',
+          customerName: appointment.CustomerName || appointment.customerName || '',
+          ownerName: appointment.OwnerName || appointment.ownerName || appointment.CustomerName || appointment.customerName || '',
+          price: appointment.Price || appointment.price || 0
+        });
+      } else {
+        // For EDIT mode, only map the editable fields
+        setFormData({
+          petId: petId || '',
+          serviceId: appointment.ServiceId || appointment.serviceId || '',
+          doctorId: appointment.DoctorId || appointment.doctorId || '',
+          appointmentDate: appointment.AppointmentDate || appointment.appointmentDate || '',
+          appointmentTime: appointment.AppointmentTime || appointment.appointmentTime || '',
+          age: petAge !== null ? petAge : (appointment.Age || appointment.age || ''),
+          isNewPet: appointment.IsNewPet || appointment.isNewPet || false,
+          notes: appointment.Notes || appointment.notes || '',
+          status: appointment.Status !== undefined ? appointment.Status : (appointment.status || 0)
+        });
+      }
     }
     
     setFormErrors({});

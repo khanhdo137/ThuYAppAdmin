@@ -1,4 +1,5 @@
 import apiService from './apiService';
+import { API_BASE_URL } from './config';
 
 class UserService {
   // Normalize user data to ensure consistent field names
@@ -143,13 +144,26 @@ class UserService {
   // Delete user (admin only)
   async deleteUser(userId) {
     try {
-      const response = await apiService.fetchWithFallback(`${this.getApiUrl()}/User/${userId}`, {
+      const url = `${this.getApiUrl()}/User/delete/${userId}`;
+      console.log('🗑️ Delete User - URL:', url);
+      console.log('🗑️ Delete User - Headers:', apiService.getHeaders());
+      
+      const response = await apiService.fetchWithFallback(url, {
         method: 'DELETE',
         headers: apiService.getHeaders(),
       });
+      
+      console.log('🗑️ Delete User - Response Status:', response.status);
+      console.log('🗑️ Delete User - Response OK:', response.ok);
+      
       return await apiService.handleResponse(response);
     } catch (error) {
-      console.error('Error deleting user:', error);
+      console.error('❌ Error deleting user:', error);
+      console.error('❌ Error details:', {
+        message: error.message,
+        stack: error.stack,
+        name: error.name
+      });
       throw error;
     }
   }
@@ -195,7 +209,7 @@ class UserService {
 
   // Helper method to get API URL
   getApiUrl() {
-    return process.env.REACT_APP_API_BASE_URL || 'https://localhost:7048/api';
+    return API_BASE_URL;
   }
 
   // Get role name from role number

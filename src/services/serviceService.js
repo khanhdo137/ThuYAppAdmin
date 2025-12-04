@@ -1,4 +1,5 @@
 import apiService from './apiService';
+import { API_BASE_URL } from './config';
 
 class ServiceService {
   // Get all services (for admin) with pagination
@@ -145,7 +146,7 @@ class ServiceService {
         isActive: serviceData.isActive !== undefined ? serviceData.isActive : true
       };
 
-      const response = await fetch(`${process.env.REACT_APP_API_BASE_URL || 'http://localhost:5074/api'}/Service/admin/${id}`, {
+      const response = await fetch(`${API_BASE_URL}/Service/admin/${id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -169,7 +170,7 @@ class ServiceService {
   // Delete service (for admin)
   async deleteService(id) {
     try {
-      const response = await fetch(`${process.env.REACT_APP_API_BASE_URL || 'http://localhost:5074/api'}/Service/admin/${id}`, {
+      const response = await fetch(`${API_BASE_URL}/Service/admin/${id}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('authToken')}`

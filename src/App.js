@@ -15,13 +15,18 @@ import DoctorsPage from './pages/DoctorsPage';
 import FeedbackPage from './pages/FeedbackPage';
 import LoginPage from './pages/LoginPage';
 import Logout from './pages/Logout';
+import MedicalHistoryPage from './pages/MedicalHistoryPage';
 import NewsPage from './pages/NewsPage';
 import PetsPage from './pages/PetsPage';
+import RemindersPage from './pages/RemindersPage';
 import ServicesPage from './pages/ServicesPage';
 
 // Components
 import PrivateRoute from './components/PrivateRoute';
 import { ToastProvider } from './components/ToastProvider';
+
+// Context
+import { NotificationProvider } from './context/NotificationContext';
 
 // Create Material UI theme
 const theme = createTheme({
@@ -102,37 +107,45 @@ function App() {
       <ToastProvider>
         <Router>
           <Routes>
-            {/* Redirect root to login */}
-            <Route path="/" element={<Navigate to="/login" replace />} />
-            
-            {/* Public Routes */}
-            <Route path="/login" element={<LoginPage />} />
-            
-            {/* Protected Admin Routes */}
-            <Route path="/admin" element={<PrivateRoute><DashboardLayout /></PrivateRoute>}>
-              <Route path="dashboard" element={<DashboardPage />} />
-              <Route path="appointments" element={<AppointmentsPage />} />
-              <Route path="chat" element={<ChatPage />} />
-              <Route path="customers" element={<CustomersPage />} />
-              <Route path="doctors" element={<DoctorsPage />} />
-              <Route path="pets" element={<PetsPage />} />
-              <Route path="services" element={<ServicesPage />} />
-              <Route path="news" element={<NewsPage />} />
-              <Route path="feedbacks" element={<FeedbackPage />} />
-            </Route>
-            
-            {/* Logout Route */}
-            <Route path="/logout" element={<Logout />} />
-            
-            {/* Legacy Routes - Redirect to new structure */}
-            <Route path="/dashboard" element={<Navigate to="/admin/dashboard" replace />} />
-            <Route path="/appointments" element={<Navigate to="/admin/appointments" replace />} />
-            <Route path="/customers" element={<Navigate to="/admin/customers" replace />} />
-            <Route path="/doctors" element={<Navigate to="/admin/doctors" replace />} />
-            <Route path="/pets" element={<Navigate to="/admin/pets" replace />} />
-            <Route path="/services" element={<Navigate to="/admin/services" replace />} />
-            <Route path="/news" element={<Navigate to="/admin/news" replace />} />
-            <Route path="/feedbacks" element={<Navigate to="/admin/feedbacks" replace />} />
+          {/* Redirect root to login */}
+          <Route path="/" element={<Navigate to="/login" replace />} />
+          
+          {/* Public Routes */}
+          <Route path="/login" element={<LoginPage />} />
+          
+          {/* Protected Admin Routes with NotificationProvider */}
+          <Route path="/admin" element={
+            <NotificationProvider>
+              <PrivateRoute>
+                <DashboardLayout />
+              </PrivateRoute>
+            </NotificationProvider>
+          }>
+            <Route path="dashboard" element={<DashboardPage />} />
+            <Route path="appointments" element={<AppointmentsPage />} />
+            <Route path="chat" element={<ChatPage />} />
+            <Route path="customers" element={<CustomersPage />} />
+            <Route path="doctors" element={<DoctorsPage />} />
+            <Route path="pets" element={<PetsPage />} />
+            <Route path="services" element={<ServicesPage />} />
+            <Route path="news" element={<NewsPage />} />
+            <Route path="feedbacks" element={<FeedbackPage />} />
+            <Route path="reminders" element={<RemindersPage />} />
+            <Route path="medical-histories" element={<MedicalHistoryPage />} />
+          </Route>
+          
+          {/* Logout Route */}
+          <Route path="/logout" element={<Logout />} />
+          
+          {/* Legacy Routes - Redirect to new structure */}
+          <Route path="/dashboard" element={<Navigate to="/admin/dashboard" replace />} />
+          <Route path="/appointments" element={<Navigate to="/admin/appointments" replace />} />
+          <Route path="/customers" element={<Navigate to="/admin/customers" replace />} />
+          <Route path="/doctors" element={<Navigate to="/admin/doctors" replace />} />
+          <Route path="/pets" element={<Navigate to="/admin/pets" replace />} />
+          <Route path="/services" element={<Navigate to="/admin/services" replace />} />
+          <Route path="/news" element={<Navigate to="/admin/news" replace />} />
+          <Route path="/feedbacks" element={<Navigate to="/admin/feedbacks" replace />} />
           </Routes>
         </Router>
       </ToastProvider>
