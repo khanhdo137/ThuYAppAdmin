@@ -23,12 +23,13 @@ import {
     Fade,
     Slide
 } from '@mui/material';
-import React from 'react';
+import React, { useCallback } from 'react';
 import { DataTable, PageTemplate, SearchFilterBar } from '../components';
 import {
     PET_DIALOG_MODES,
     PET_SEARCH_PLACEHOLDER,
     PetDialog,
+    PetFormDialog,
     getPetTableColumns,
     usePetForm,
     usePets
@@ -36,6 +37,7 @@ import {
 
 const PetsPage = () => {
   const [refreshing, setRefreshing] = React.useState(false);
+  const [createDialogOpen, setCreateDialogOpen] = React.useState(false);
 
   // Use custom hooks for state management
   const {
@@ -48,7 +50,6 @@ const PetsPage = () => {
     pagination,
     handleSearch,
     handlePageChange,
-    handleLimitChange,
     createPet,
     updatePet,
     deletePet,
@@ -72,17 +73,25 @@ const PetsPage = () => {
     getSubmissionData
   } = usePetForm();
 
+  // Handle create pet with new dialog
+  const handleCreateSubmit = useCallback(async (formData) => {
+    const result = await createPet(formData);
+    if (result.success) {
+      setCreateDialogOpen(false);
+    }
+  }, [createPet]);
+
   // Handle form submission
-  const handleCreatePet = async () => {
+  const handleCreatePet = useCallback(async () => {
     if (!validateForm()) return;
     
     const result = await createPet(getSubmissionData());
     if (result.success) {
       closeDialog();
     }
-  };
+  }, [validateForm, createPet, getSubmissionData, closeDialog]);
 
-  const handleUpdatePet = async () => {
+  const handleUpdatePet = useCallback(async () => {
     if (!validateForm()) return;
     
     const petId = selectedPet.petId;
@@ -90,19 +99,22 @@ const PetsPage = () => {
     if (result.success) {
       closeDialog();
     }
-  };
+  }, [validateForm, selectedPet, updatePet, getSubmissionData, closeDialog]);
 
   // Handle refresh
-  const handleRefresh = async () => {
+  const handleRefresh = useCallback(async () => {
     setRefreshing(true);
     if (refreshPets) {
       await refreshPets();
     }
     setRefreshing(false);
-  };
+  }, [refreshPets]);
 
   // Calculate statistics
-  const petsArray = Array.isArray(pets) ? pets : [];
+  const petsArray = React.useMemo(() => {
+    return Array.isArray(pets) ? pets : [];
+  }, [pets]);
+  
   const stats = React.useMemo(() => {
     const speciesCount = {};
     let maleCount = 0;
@@ -360,7 +372,7 @@ const PetsPage = () => {
                 <Button
                   variant="contained"
                   startIcon={<AddIcon />}
-                  onClick={() => openDialog(PET_DIALOG_MODES.CREATE)}
+                  onClick={() => setCreateDialogOpen(true)}
                   sx={{
                     background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
                     color: 'white',
@@ -406,6 +418,18 @@ const PetsPage = () => {
           </Paper>
         </Box>
       </Fade>
+
+      <PetFormDialog
+        open={createDialogOpen}
+        onClose={() => setCreateDialogOpen(false)}
+        onSubmit={handleCreateSubmit}
+        customers={customers}
+        loading={loading}
+        imageUploading={imageUploading}
+        onImageUpload={handleImageUpload}
+        onImageRemove={handleImageRemove}
+        externalImageUrl={formData.imageUrl}
+      />
 
       <PetDialog
         open={dialogOpen} 

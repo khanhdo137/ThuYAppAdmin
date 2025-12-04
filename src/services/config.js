@@ -11,7 +11,7 @@
  */
 
 // IP của server backend (THAY ĐỔI IP Ở ĐÂY)
-const API_IP = process.env.REACT_APP_API_IP || '192.168.1.49';
+const API_IP = process.env.REACT_APP_API_IP || '192.168.1.12';
 const API_PORT = process.env.REACT_APP_API_PORT || '5074';
 
 // Base URL của API

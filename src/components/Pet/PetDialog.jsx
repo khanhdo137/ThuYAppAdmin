@@ -32,7 +32,7 @@ import {
     Notes as NotesIcon,
     Phone as PhoneIcon
 } from '@mui/icons-material';
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import DirectImageUpload from '../DirectImageUpload';
 import {
     PET_DIALOG_MODES,
@@ -59,6 +59,22 @@ const PetDialog = ({
   customerLoadState
 }) => {
   const [activeTab, setActiveTab] = useState(0);
+  const nameInputRef = useRef(null);
+  const breedInputRef = useRef(null);
+  const notesInputRef = useRef(null);
+  
+  // Update input values without re-render when formData changes from external source
+  useEffect(() => {
+    if (nameInputRef.current && nameInputRef.current.value !== formData.name) {
+      nameInputRef.current.value = formData.name || '';
+    }
+    if (breedInputRef.current && breedInputRef.current.value !== formData.breed) {
+      breedInputRef.current.value = formData.breed || '';
+    }
+    if (notesInputRef.current && notesInputRef.current.value !== formData.notes) {
+      notesInputRef.current.value = formData.notes || '';
+    }
+  }, [open, dialogMode]); // Only when dialog opens or mode changes
   
   const isViewMode = dialogMode === PET_DIALOG_MODES.VIEW;
   const isCreateMode = dialogMode === PET_DIALOG_MODES.CREATE;
@@ -77,7 +93,7 @@ const PetDialog = ({
   };
 
   const handleClose = () => {
-    setActiveTab(0); // Reset tab về tab đầu tiên khi đóng
+    setActiveTab(0);
     onClose();
   };
 
@@ -458,21 +474,23 @@ const PetDialog = ({
 
             {/* Pet Name */}
             <TextField
+              name="name"
               label="Tên thú cưng"
-              value={formData.name}
+              defaultValue={formData.name || ''}
               onChange={(e) => onFormChange('name', e.target.value)}
               error={!!formErrors.name}
               helperText={formErrors.name}
               disabled={isViewMode}
               fullWidth
               required
+              inputRef={nameInputRef}
             />
 
             {/* Species */}
             <TextField
               label="Loài"
               select
-              value={formData.species}
+              value={formData.species || ''}
               onChange={(e) => onFormChange('species', e.target.value)}
               error={!!formErrors.species}
               helperText={formErrors.species}
@@ -490,20 +508,22 @@ const PetDialog = ({
 
             {/* Breed */}
             <TextField
+              name="breed"
               label="Giống"
-              value={formData.breed}
+              defaultValue={formData.breed || ''}
               onChange={(e) => onFormChange('breed', e.target.value)}
               error={!!formErrors.breed}
               helperText={formErrors.breed}
               disabled={isViewMode}
               fullWidth
+              inputRef={breedInputRef}
             />
 
             {/* Gender */}
             <TextField
               label="Giới tính"
               select
-              value={formData.gender}
+              value={formData.gender || ''}
               onChange={(e) => onFormChange('gender', e.target.value)}
               error={!!formErrors.gender}
               helperText={formErrors.gender}
@@ -519,7 +539,7 @@ const PetDialog = ({
             <TextField
               label="Ngày sinh"
               type="date"
-              value={formData.birthDate}
+              value={formData.birthDate || ''}
               onChange={(e) => onFormChange('birthDate', e.target.value)}
               error={!!formErrors.birthDate}
               helperText={formErrors.birthDate}
@@ -555,12 +575,13 @@ const PetDialog = ({
               label="Ghi chú"
               multiline
               rows={3}
-              value={formData.notes}
+              defaultValue={formData.notes || ''}
               onChange={(e) => onFormChange('notes', e.target.value)}
               error={!!formErrors.notes}
               helperText={formErrors.notes}
               fullWidth
               placeholder="Thêm ghi chú về thú cưng..."
+              inputRef={notesInputRef}
             />
             </Box>
           )}

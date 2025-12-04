@@ -1,5 +1,6 @@
 // Re-export all Pet components and hooks
 export { default as PetDialog } from './PetDialog';
+export { default as PetFormDialog } from './PetFormDialog';
 export { default as PetForm } from './PetForm';
 export { default as PetMedicalHistoryTab } from './PetMedicalHistoryTab';
 export { PetTable } from './PetTable';

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { cloudinaryService } from '../../services';
 import { useToast } from '../ToastProvider';
 import {
@@ -30,7 +30,7 @@ export const usePetForm = () => {
   /**
    * Open dialog in specified mode
    */
-  const openDialog = (mode, pet = null) => {
+  const openDialog = useCallback((mode, pet = null) => {
     setDialogMode(mode);
     setSelectedPet(pet);
     
@@ -68,12 +68,12 @@ export const usePetForm = () => {
     
     setFormErrors({});
     setDialogOpen(true);
-  };
+  }, []);
 
   /**
    * Close dialog and reset form
    */
-  const closeDialog = () => {
+  const closeDialog = useCallback(() => {
     setDialogOpen(false);
     setSelectedPet(null);
     setFormData(PET_INITIAL_FORM_DATA);
@@ -81,30 +81,33 @@ export const usePetForm = () => {
     setOriginalImageUrl('');
     setPendingImageFile(null);
     setImageUploading(false);
-  };
+  }, []);
 
   /**
    * Handle form field changes
    */
-  const handleFormChange = (field, value) => {
+  const handleFormChange = useCallback((field, value) => {
     setFormData(prev => ({
       ...prev,
       [field]: value
     }));
     
     // Clear error for this field
-    if (formErrors[field]) {
-      setFormErrors(prev => ({
-        ...prev,
-        [field]: ''
-      }));
-    }
-  };
+    setFormErrors(prev => {
+      if (prev[field]) {
+        return {
+          ...prev,
+          [field]: ''
+        };
+      }
+      return prev;
+    });
+  }, []);
 
   /**
    * Handle image file selection and upload
    */
-  const handleImageUpload = async (file) => {
+  const handleImageUpload = useCallback(async (file) => {
     if (!file) return;
 
     console.log('🖼️ Starting image upload process:', file.name, file.size);
@@ -128,31 +131,31 @@ export const usePetForm = () => {
     } finally {
       setImageUploading(false);
     }
-  };
+  }, [toast]);
 
   /**
    * Handle image removal
    */
-  const handleImageRemove = () => {
+  const handleImageRemove = useCallback(() => {
     setFormData(prev => ({ ...prev, imageUrl: '' }));
     setPendingImageFile(null);
-  };
+  }, []);
 
   /**
    * Validate current form data
    */
-  const validateForm = () => {
+  const validateForm = useCallback(() => {
     const validation = validatePetForm(formData);
     setFormErrors(validation.errors);
     return validation.isValid;
-  };
+  }, [formData]);
 
   /**
    * Get form data for submission
    */
-  const getSubmissionData = () => {
+  const getSubmissionData = useCallback(() => {
     return formatPetSubmissionData(formData);
-  };
+  }, [formData]);
 
   /**
    * Check if form has unsaved changes
