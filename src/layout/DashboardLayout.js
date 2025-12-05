@@ -14,7 +14,8 @@ import {
     Notifications,
     Settings,
     ScheduleSend,
-    History
+    History,
+    Psychology
 } from '@mui/icons-material';
 import {
     AppBar,
@@ -79,6 +80,7 @@ const DashboardLayout = () => {
     { text: 'Tin tức', icon: <Article />, path: '/admin/news', badge: 0 },
     { text: 'Đánh giá', icon: <Star />, path: '/admin/feedbacks', badge: notifications.feedbacks },
     { text: 'Nhắc hẹn', icon: <ScheduleSend />, path: '/admin/reminders', badge: 0 },
+    { text: 'Phân tích KNN', icon: <Psychology />, path: '/admin/knn-analysis', badge: 0 },
   ], [notifications]);
 
   // Load user info on component mount

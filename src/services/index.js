@@ -7,6 +7,7 @@ import customerService from './customerService';
 import dashboardService from './dashboardService';
 import doctorService from './doctorService';
 import feedbackService from './feedbackService';
+import knnAnalysisService from './knnAnalysisService';
 import medicalHistoryService from './medicalHistoryService';
 import newsService from './newsService';
 import petService from './petService';
@@ -23,6 +24,7 @@ export {
     dashboardService,
     doctorService,
     feedbackService,
+    knnAnalysisService,
     medicalHistoryService,
     newsService,
     petService,
@@ -43,5 +45,6 @@ export default {
   service: serviceService,
   doctor: doctorService,
   feedback: feedbackService,
-  medicalHistory: medicalHistoryService
+  medicalHistory: medicalHistoryService,
+  knnAnalysis: knnAnalysisService
 }; 

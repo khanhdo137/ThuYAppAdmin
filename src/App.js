@@ -13,6 +13,7 @@ import CustomersPage from './pages/CustomersPage';
 import DashboardPage from './pages/DashboardPage';
 import DoctorsPage from './pages/DoctorsPage';
 import FeedbackPage from './pages/FeedbackPage';
+import KNNAnalysisPage from './pages/KNNAnalysisPage';
 import LoginPage from './pages/LoginPage';
 import Logout from './pages/Logout';
 import MedicalHistoryPage from './pages/MedicalHistoryPage';
@@ -132,6 +133,7 @@ function App() {
             <Route path="feedbacks" element={<FeedbackPage />} />
             <Route path="reminders" element={<RemindersPage />} />
             <Route path="medical-histories" element={<MedicalHistoryPage />} />
+            <Route path="knn-analysis" element={<KNNAnalysisPage />} />
           </Route>
           
           {/* Logout Route */}
